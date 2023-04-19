@@ -1,0 +1,78 @@
+mods.StyleMaskHelper.name=Style Mask Helper
+
+# Styleground Mask
+entities.StyleMaskHelper/StylegroundMask.placements.name.default=Styleground Mask
+entities.StyleMaskHelper/StylegroundMask.attributes.description.scrollX=Parallax scrolling of the mask along the X axis.
+entities.StyleMaskHelper/StylegroundMask.attributes.description.scrollY=Parallax scrolling of the mask along the Y axis.
+entities.StyleMaskHelper/StylegroundMask.attributes.description.fade=Direction the styleground transparency will fade.
+entities.StyleMaskHelper/StylegroundMask.attributes.description.customFade=The path of a white texture (from Gameplay/fademasks) which will be used to mask the effect with Custom fade type enabled.
+entities.StyleMaskHelper/StylegroundMask.attributes.description.flag=Flag that must be activated for the mask to display. (Empty for none)
+entities.StyleMaskHelper/StylegroundMask.attributes.description.notFlag=Inverts the flag requirement.
+entities.StyleMaskHelper/StylegroundMask.attributes.description.tag=Styleground tag to render. For example, "stars" will render all stylegrounds with the tag "mask_stars".
+entities.StyleMaskHelper/StylegroundMask.attributes.description.entityRenderer=Enables lighting and other inaccurate effects.
+entities.StyleMaskHelper/StylegroundMask.attributes.description.behindFg=(Entity renderer disabled only) Makes the foreground effects of this mask appear behind the level's foreground effects.
+entities.StyleMaskHelper/StylegroundMask.attributes.description.alphaFrom=The transparency of the styleground at the start of the fade.
+entities.StyleMaskHelper/StylegroundMask.attributes.description.alphaTo=The transparency of the styleground at the end of the fade.
+
+# Bloom Mask
+entities.StyleMaskHelper/BloomMask.placements.name.default=Bloom Mask
+entities.StyleMaskHelper/BloomMask.attributes.description.scrollX=Parallax scrolling of the mask along the X axis.
+entities.StyleMaskHelper/BloomMask.attributes.description.scrollY=Parallax scrolling of the mask along the Y axis.
+entities.StyleMaskHelper/BloomMask.attributes.description.fade=Direction the bloom changes will fade.
+entities.StyleMaskHelper/BloomMask.attributes.description.customFade=The path of a white texture (from Gameplay/fademasks) which will be used to mask the effect with Custom fade type enabled.
+entities.StyleMaskHelper/BloomMask.attributes.description.flag=Flag that must be activated for the mask to display. (Empty for none)
+entities.StyleMaskHelper/BloomMask.attributes.description.notFlag=Inverts the flag requirement.
+entities.StyleMaskHelper/BloomMask.attributes.description.baseFrom=The base bloom amount at the start of the fade. (-1 for current value)
+entities.StyleMaskHelper/BloomMask.attributes.description.baseTo=The base bloom amount at the end of the fade. (-1 for current value)
+entities.StyleMaskHelper/BloomMask.attributes.description.strengthFrom=The bloom strength at the start of the fade. (-1 for current value)
+entities.StyleMaskHelper/BloomMask.attributes.description.strengthTo=The bloom strength at the end of the fade. (-1 for current value)
+
+# Color Grade Mask
+entities.StyleMaskHelper/ColorGradeMask.placements.name.default=Color Grade Mask
+entities.StyleMaskHelper/ColorGradeMask.attributes.description.scrollX=Parallax scrolling of the mask along the X axis.
+entities.StyleMaskHelper/ColorGradeMask.attributes.description.scrollY=Parallax scrolling of the mask along the Y axis.
+entities.StyleMaskHelper/ColorGradeMask.attributes.description.fade=Direction the color grade will fade in.
+entities.StyleMaskHelper/ColorGradeMask.attributes.description.customFade=The path of a white texture (from Gameplay/fademasks) which will be used to mask the effect with Custom fade type enabled.
+entities.StyleMaskHelper/ColorGradeMask.attributes.description.flag=Flag that must be activated for the mask to display. (Empty for none)
+entities.StyleMaskHelper/ColorGradeMask.attributes.description.notFlag=Inverts the flag requirement.
+entities.StyleMaskHelper/ColorGradeMask.attributes.description.colorGradeFrom=The color grading to use at the start of the fade.
+entities.StyleMaskHelper/ColorGradeMask.attributes.description.colorGradeTo=The color grading to use at the end of the fade.
+entities.StyleMaskHelper/ColorGradeMask.attributes.description.fadeFrom=How much the From color grade should start faded in.
+entities.StyleMaskHelper/ColorGradeMask.attributes.description.fadeTo=How much the To Color grade should end faded in.
+
+# Lighting Mask
+entities.StyleMaskHelper/LightingMask.placements.name.default=Lighting Mask
+entities.StyleMaskHelper/LightingMask.attributes.description.scrollX=Parallax scrolling of the mask along the X axis.
+entities.StyleMaskHelper/LightingMask.attributes.description.scrollY=Parallax scrolling of the mask along the Y axis.
+entities.StyleMaskHelper/LightingMask.attributes.description.fade=Direction the lighting will fade.
+entities.StyleMaskHelper/LightingMask.attributes.description.customFade=The path of a white texture (from Gameplay/fademasks) which will be used to mask the effect with Custom fade type enabled.
+entities.StyleMaskHelper/LightingMask.attributes.description.flag=Flag that must be activated for the mask to display. (Empty for none)
+entities.StyleMaskHelper/LightingMask.attributes.description.notFlag=Inverts the flag requirement.
+entities.StyleMaskHelper/LightingMask.attributes.description.lightingFrom=The lighting of the region at the start of the fade. (-1 for current value)
+entities.StyleMaskHelper/LightingMask.attributes.description.lightingTo=The lighting of the region at the end of the fade. (-1 for current value)
+entities.StyleMaskHelper/LightingMask.attributes.description.addBase=Whether the level's darkness alpha will be added to the mask's darkness.
+
+# All-In-One Mask
+entities.StyleMaskHelper/AllInOneMask.placements.name.default=All-In-One Mask
+entities.StyleMaskHelper/AllInOneMask.attributes.description.scrollX=Parallax scrolling of the mask along the X axis.
+entities.StyleMaskHelper/AllInOneMask.attributes.description.scrollY=Parallax scrolling of the mask along the Y axis.
+entities.StyleMaskHelper/AllInOneMask.attributes.description.fade=Direction the effects will fade.
+entities.StyleMaskHelper/AllInOneMask.attributes.description.customFade=The path of a white texture (from Gameplay/fademasks) which will be used to mask the effect with Custom fade type enabled.
+entities.StyleMaskHelper/AllInOneMask.attributes.description.flag=Flag that must be activated for the mask to display. (Empty for none)
+entities.StyleMaskHelper/AllInOneMask.attributes.description.notFlag=Inverts the flag requirement.
+entities.StyleMaskHelper/AllInOneMask.attributes.description.styleTag=Styleground tag to render. For example, "stars" will render all stylegrounds with the tag "mask_stars".
+entities.StyleMaskHelper/AllInOneMask.attributes.description.entityRenderer=Enables lighting and other innacurate effects on the styleground.
+entities.StyleMaskHelper/AllInOneMask.attributes.description.styleBehindFg=(Entity renderer disabled only) Makes the foreground effects of this mask appear behind the level's foreground effects.
+entities.StyleMaskHelper/AllInOneMask.attributes.description.styleAlphaFrom=The transparency of the styleground at the start of the fade.
+entities.StyleMaskHelper/AllInOneMask.attributes.description.styleAlphaTo=The transparency of the styleground at the end of the fade.
+entities.StyleMaskHelper/AllInOneMask.attributes.description.bloomBaseFrom=The base bloom amount at the start of the fade. (-1 for current value)
+entities.StyleMaskHelper/AllInOneMask.attributes.description.bloomBaseTo=The base bloom amount at the end of the fade. (-1 for current value)
+entities.StyleMaskHelper/AllInOneMask.attributes.description.bloomStrengthFrom=The bloom strength at the start of the fade. (-1 for current value)
+entities.StyleMaskHelper/AllInOneMask.attributes.description.bloomStrengthTo=The bloom strength at the end of the fade. (-1 for current value)
+entities.StyleMaskHelper/AllInOneMask.attributes.description.colorGradeFrom=The color grading to use at the start of the fade.
+entities.StyleMaskHelper/AllInOneMask.attributes.description.colorGradeTo=The color grading to use at the end of the fade.
+entities.StyleMaskHelper/AllInOneMask.attributes.description.colorGradeFadeFrom=How much the From color grade should start faded in.
+entities.StyleMaskHelper/AllInOneMask.attributes.description.colorGradeFadeTo=How much the To Color grade should end faded in.
+entities.StyleMaskHelper/AllInOneMask.attributes.description.lightingFrom=The lighting of the region at the start of the fade. (-1 for current value)
+entities.StyleMaskHelper/AllInOneMask.attributes.description.lightingTo=The lighting of the region at the end of the fade. (-1 for current value)
+entities.StyleMaskHelper/AllInOneMask.attributes.description.addBaseLight=Whether the level's darkness alpha will be added to the mask's darkness.
