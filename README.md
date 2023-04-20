@@ -24,7 +24,9 @@ Stylegrounds with a `mask_` tag will not be visible outside of a styleground mas
 
 All masks can be given an image for their shape instead of just a rectangle using the "Custom" fade mode by placing an image inside the `Gameplay/fademasks` graphics folder, and setting the "Custom Fade" option to the image's path (relative to the `fademasks` folder).
 
-The image should only consist of transparency and white, where the white is where your mask will render. [Check the default masks that come with the mod for examples.](Graphics/Atlases/Gameplay/fademasks/)
+The image should only consist of transparency and white, where the white is where your mask will render. The image will be stretched to fit your mask, so make sure you have the sizes right!
+
+The mod comes with a few [default fade masks](Graphics/Atlases/Gameplay/fademasks/) you can use, so check those for examples.
 
 ## Screenshots
 
@@ -42,9 +44,11 @@ The image should only consist of transparency and white, where the white is wher
 
 ## Known Issues
 
-- Custom Fade has issues with every mask type right now
-- Heat Wave effect displacement rendering does not work properly with styleground masks
-- Some styleground effects (specifically discovered with Custom Wind Snow from CrystallineHelper) are sped up when masked
+- Custom Fade option has a variety of issues:
+  - Styleground masks dont support transparent stylegrounds (big issue for foregrounds)
+  - Color grade masks look ugly with partial transparency
+  - Bloom masks just dont work with it
+  - Lighting masks dont work with it either (and also break light sources in their area)
 
 ## Building
 

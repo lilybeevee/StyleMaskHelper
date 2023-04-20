@@ -5,12 +5,6 @@
         <AssemblyName>StyleMaskHelper</AssemblyName>
         <RootNamespace>Celeste.Mod.StyleMaskHelper</RootNamespace>
         <LangVersion>latest</LangVersion>
-        <CelestePrefix Condition="'$(CelestePrefix)' == '' And Exists('..\..\Celeste.exe')">..\..</CelestePrefix>
-        <CelestePrefix Condition="'$(CelestePrefix)' == '' And Exists('..\..\..\Celeste.exe')">..\..\..</CelestePrefix>
-        <CelestePrefix Condition="'$(CelestePrefix)' == ''">lib-stripped</CelestePrefix>
-        <CelesteType Condition="'$(CelesteType)' == '' And Exists('$(CelestePrefix)\BuildIsXNA.txt')">XNA</CelesteType>
-        <CelesteType Condition="'$(CelesteType)' == ''">FNA</CelesteType>
-        <XNAPath Condition="'$(XNAPath)' == ''">$(WINDIR)\Microsoft.NET\assembly\GAC_32\{0}\v4.0_4.0.0.0__842cf8be1de50553\{0}.dll</XNAPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -30,26 +24,15 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="lib-stripped\Celeste.exe" />
-        <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" />
-        <Reference Include="lib-stripped\MaxHelpingHand.dll" />
+        <Reference Include="lib-stripped\Celeste-nstrip.exe" />
+        <Reference Include="lib-stripped\FNA.dll" />
+        <Reference Include="lib-stripped\MMHOOK_Celeste.dll" />
     </ItemGroup>
 
-    <Choose>
-        <When Condition="'$(CelesteType)' == 'FNA'">
-            <ItemGroup>
-                <Reference Include="$(CelestePrefix)\FNA.dll" />
-            </ItemGroup>
-        </When>
-
-        <When Condition="'$(CelesteType)' == 'XNA'">
-            <ItemGroup>
-                <Reference Include="$([System.String]::Format('$(XNAPath)', 'Microsoft.Xna.Framework'))" />
-                <Reference Include="$([System.String]::Format('$(XNAPath)', 'Microsoft.Xna.Framework.Game'))" />
-                <Reference Include="$([System.String]::Format('$(XNAPath)', 'Microsoft.Xna.Framework.Graphics'))" />
-            </ItemGroup>
-        </When>
-    </Choose>
+    <ItemGroup>
+        <Reference Include="lib-stripped\MaxHelpingHand.dll" />
+        <Reference Include="lib-stripped\CelesteTAS-EverestInterop.dll" />
+    </ItemGroup>
 
     <Target Name="CopyFiles" AfterTargets="Build">
         <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="bin" />

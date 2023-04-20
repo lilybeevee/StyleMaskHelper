@@ -1,8 +1,25 @@
 ﻿using Celeste.Mod.StyleMaskHelper.Masks;
+using System;
 
 namespace Celeste.Mod.StyleMaskHelper;
 
 public class StyleMaskModule : EverestModule {
+
+    public static bool MaddieHelpingHandLoaded { get; private set; }
+    public static bool CelesteTASLoaded { get; private set; }
+
+    public override void Initialize() {
+        base.Initialize();
+
+        MaddieHelpingHandLoaded = Everest.Loader.DependencyLoaded(new EverestModuleMetadata {
+            Name = "MaxHelpingHand",
+            Version = new Version(1, 24, 10)
+        });
+        CelesteTASLoaded = Everest.Loader.DependencyLoaded(new EverestModuleMetadata {
+            Name = "CelesteTAS",
+            Version = new Version(3, 25, 9)
+        });
+    }
 
     public override void Load() {
         BloomMask.Load();

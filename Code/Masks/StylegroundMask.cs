@@ -1,5 +1,5 @@
 ﻿using Celeste.Mod.Entities;
-using Celeste.Mod.MaxHelpingHand.Effects;
+using Celeste.Mod.StyleMaskHelper.Compat;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Mono.Cecil.Cil;
@@ -9,6 +9,7 @@ using MonoMod.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace Celeste.Mod.StyleMaskHelper.Masks;
 
@@ -41,6 +42,7 @@ public class StylegroundMask : Mask {
 
     public override void Added(Scene scene) {
         base.Added(scene);
+
         if (EntityRenderer && !Foreground) {
             scene.Add(new StylegroundMask(Position, Width, Height) {
                 Depth = -2000000,
@@ -57,22 +59,51 @@ public class StylegroundMask : Mask {
                 AlphaTo = AlphaTo
             });
         }
-        
-        if (!Foreground && (scene as Level).Foreground.Backdrops.Any(backdrop =>
-            backdrop is HeatWave wave and not HeatWaveNoColorGrade &&
-            RenderTags.Any(tag => wave.Tags.Contains(StylegroundMaskRenderer.TagPrefix + tag)))) {
 
-            scene.Add(new ColorGradeMask(Position, Width, Height) {
-                Fade = Fade,
-                Flag = Flag,
-                NotFlag = NotFlag,
-                ScrollX = ScrollX,
-                ScrollY = ScrollY,
-                ColorGradeTo = "(core)",
-            });
+        // Special case: Automatically add a core mode Color Grade Mask if we're masking a Heat Wave effect
+        if (!Foreground) {
+            var needsColorGrade = false;
+
+            var maskRenderer = StylegroundMaskRenderer.GetRendererInLevel(scene as Level);
+            if (maskRenderer != null) {
+                // Check masked backdrops for a Heat Wave effect
+                needsColorGrade = maskRenderer.FGBackdrops.Any(pair =>
+                    RenderTags.Contains(pair.Key) &&
+                    pair.Value.Any(backdrop => IsColorGradeHeatWave(backdrop)));
+            } else {
+                // Styleground renderer not added yet, check for Heat Wave effect in the level
+                needsColorGrade = (scene as Level).Foreground.Backdrops.Any(backdrop =>
+                    IsColorGradeHeatWave(backdrop) &&
+                    RenderTags.Any(tag => backdrop.Tags.Contains(StylegroundMaskRenderer.TagPrefix + tag)));
+            }
+
+            if (needsColorGrade) {
+                scene.Add(new ColorGradeMask(Position, Width, Height) {
+                    Fade = Fade,
+                    FadeMask = FadeMask,
+                    Flag = Flag,
+                    NotFlag = NotFlag,
+                    ScrollX = ScrollX,
+                    ScrollY = ScrollY,
+                    FadeFrom = 0f,
+                    FadeTo = 1f,
+                    ColorGradeFrom = "(current)",
+                    ColorGradeTo = "(core)",
+                });
+            }
         }
     }
 
+    private bool IsColorGradeHeatWave(Backdrop backdrop) {
+        if (backdrop is not HeatWave)
+            return false;
+
+        if (StyleMaskModule.MaddieHelpingHandLoaded && MaddieHelpingHandCompat.IsHeatWaveNoColorGrade(backdrop))
+            return false;
+
+        return true;
+    }
+    
     public override void Render() {
         base.Render();
         if (EntityRenderer) {
@@ -90,7 +121,8 @@ public class StylegroundMask : Mask {
 
 public class StylegroundMaskRenderer : Renderer {
     public const string TagPrefix = "mask_";
-    public const string MaskBufferNamePrefix = "StyleMaskHelper_StylegroundMask_";
+    public const string MaskBufferFgNamePrefix = "StyleMaskHelper_StylegroundMask_fg_";
+    public const string MaskBufferBgNamePrefix = "StyleMaskHelper_StylegroundMask_bg_";
     public const string DynDataRendererName = "StyleMaskHelper_StylegroundMaskRenderer";
 
     /// <summary>
@@ -103,6 +135,7 @@ public class StylegroundMaskRenderer : Renderer {
 
     public bool Foreground;
     public bool Behind;
+    public bool SkipBuffers;
 
     // tag -> backdrops
     public Dictionary<string, List<Backdrop>> FGBackdrops = new();
@@ -130,8 +163,10 @@ public class StylegroundMaskRenderer : Renderer {
     public static VirtualRenderTarget GetBuffer(string tag, bool foreground) {
         var buffers = GetBuffers(foreground);
 
-        if (!buffers.ContainsKey(tag))
-            buffers.Add(tag, VirtualContent.CreateRenderTarget(MaskBufferNamePrefix + tag, 320, 180, preserve: false));
+        if (!buffers.ContainsKey(tag)) {
+            var namePrefix = foreground ? MaskBufferFgNamePrefix : MaskBufferBgNamePrefix;
+            buffers.Add(tag, VirtualContent.CreateRenderTarget(namePrefix + tag, 320, 180, preserve: false));
+        }
 
         return buffers[tag];
     }
@@ -206,22 +241,31 @@ public class StylegroundMaskRenderer : Renderer {
         }
     }
 
-    public void RenderWith(Scene scene, bool fg, bool behind = false) {
+    public void RenderWith(Scene scene, bool fg, bool behind = false, bool skipBuffers = false) {
         Foreground = fg;
         Behind = behind;
+        SkipBuffers = skipBuffers;
         Render(scene);
     }
 
     public override void Render(Scene scene) {
         var level = scene as Level;
 
-        var lastTargets = Engine.Graphics.GraphicsDevice.GetRenderTargets();
-        RenderStylegroundsIntoBuffers(level, Foreground);
-        Engine.Graphics.GraphicsDevice.SetRenderTargets(lastTargets);
+        if (!SkipBuffers) {
+            var lastTargets = Engine.Graphics.GraphicsDevice.GetRenderTargets();
+            RenderStylegroundsIntoBuffers(level, Foreground);
+            Engine.Graphics.GraphicsDevice.SetRenderTargets(lastTargets);
+        }
 
         var bufferDict = GetBuffers(Foreground);
         if (bufferDict.Count == 0)
             return;
+
+        // fixes bug where custom fade masks would be rendered white if simplified graphics is enabled with CelesteTAS
+        if (StyleMaskModule.CelesteTASLoaded && CelesteTASCompat.SimplifiedBackdrop)
+            return;
+
+        var backdrops = GetBackdrops(Foreground);
 
         var masks = scene.Tracker.GetEntities<StylegroundMask>().Cast<StylegroundMask>()
             .Where(mask => !mask.EntityRenderer && (!Foreground || mask.BehindForeground == Behind) && mask.IsVisible());
@@ -233,6 +277,9 @@ public class StylegroundMaskRenderer : Renderer {
 
             Draw.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, level.Camera.Matrix);
             foreach (var mask in fadeMasks) {
+                if (!mask.RenderTags.Any(tag => backdrops.ContainsKey(tag) && backdrops[tag].Count > 0))
+                    continue;
+
                 Engine.Graphics.GraphicsDevice.SetRenderTarget(GameplayBuffers.TempA);
                 Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
 
@@ -336,14 +383,14 @@ public class StylegroundMaskRenderer : Renderer {
             instr => instr.MatchCallvirt<Renderer>("Render"))) {
             cursor.Emit(OpCodes.Ldarg_0);
             cursor.EmitDelegate<Action<Level>>((level) => {
-                GetRendererInLevel(level)?.RenderWith(level, true, true);
+                GetRendererInLevel(level)?.RenderWith(level, true, behind: true);
             });
 
             cursor.Index += 4;
 
             cursor.Emit(OpCodes.Ldarg_0);
             cursor.EmitDelegate<Action<Level>>((level) => {
-                GetRendererInLevel(level)?.RenderWith(level, true, false);
+                GetRendererInLevel(level)?.RenderWith(level, true, behind: false, skipBuffers: true);
             });
         }
     }
@@ -351,38 +398,42 @@ public class StylegroundMaskRenderer : Renderer {
     private static void DisplacementRenderer_BeforeRender(ILContext il) {
         var cursor = new ILCursor(il);
 
+        var getHeatWaveMethod = typeof(BackdropRenderer)
+            .GetMethod("Get", BindingFlags.Instance | BindingFlags.Public)
+            .MakeGenericMethod(typeof(HeatWave));
+
         int heatWaveLoc = -1;
         int levelArg = -1;
-        if (cursor.TryGotoNext(MoveType.After,
-            instr => instr.MatchLdloc(out heatWaveLoc),
+        if (!cursor.TryGotoNext(MoveType.AfterLabel,
             instr => instr.MatchLdarg(out levelArg),
             instr => instr.MatchIsinst<Level>(),
-            instr => instr.MatchCallvirt<HeatWave>("RenderDisplacement"))) {
+            instr => instr.MatchLdfld<Level>("Foreground"),
+            instr => instr.MatchCallvirt(getHeatWaveMethod),
+            instr => instr.MatchStloc(out heatWaveLoc))) {
 
-            ILLabel breakLabel = null;
-            if (cursor.TryGotoPrev(MoveType.After, instr => instr.MatchBrfalse(out breakLabel))) {
-                cursor.Emit(OpCodes.Ldarg, levelArg);
-                cursor.Emit(OpCodes.Isinst, typeof(Level));
-                cursor.EmitDelegate<Func<Level, bool>>(level => {
-                    var baseRendering = true;
-                    foreach (var heatWave in level.Foreground.GetEach<HeatWave>()) {
-                        var tags = heatWave.Tags;
-                        if (tags.Any(tag => tag.StartsWith(TagPrefix))) {
-                            baseRendering = tags.Contains("nomaskhide");
-                            if (heatWave.heat > 0f) {
-                                foreach (StylegroundMask mask in level.Tracker.GetEntities<StylegroundMask>()) {
-                                    if (mask.RenderTags.Any(tag => heatWave.Tags.Contains(TagPrefix + tag))) {
-                                        foreach (var slice in mask.GetMaskSlices()) {
-                                            Draw.Rect(slice.Position.X, slice.Position.Y, slice.Source.Width, slice.Source.Height, new Color(0.5f, 0.5f, 0.1f, 1f));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    return baseRendering;
-                });
-                cursor.Emit(OpCodes.Brfalse_S, breakLabel);
+            Logger.Log("StyleMaskHelper/StylegroundMaskRenderer", $"Failed to find heat wave code in DisplacementRenderer.BeforeRender - Heat Wave displacement disabled");
+            return;
+        }
+
+        cursor.Emit(OpCodes.Ldarg, levelArg);
+        cursor.Emit(OpCodes.Isinst, typeof(Level));
+        cursor.EmitDelegate(RenderHeatWaveDisplacement);
+    }
+
+    private static void RenderHeatWaveDisplacement(Level level) {
+        var maskRenderer = GetRendererInLevel(level);
+
+        foreach (var backdropEntry in maskRenderer.FGBackdrops) {
+            var tag = backdropEntry.Key;
+            var backdrops = backdropEntry.Value;
+
+            if (!backdrops.Any(backdrop => backdrop is HeatWave heatWave && heatWave.heat > 0f))
+                continue;
+
+            foreach (var mask in maskRenderer.GetMasksWithTag(level, tag)) {
+                foreach (var slice in mask.GetMaskSlices()) {
+                    Draw.Rect(slice.Position.X, slice.Position.Y, slice.Source.Width, slice.Source.Height, new Color(0.5f, 0.5f, 0.1f, 1f));
+                }
             }
         }
     }
