@@ -8,7 +8,7 @@ using Monocle;
 using Mono.Cecil.Cil;
 using Celeste.Mod.Entities;
 
-namespace Celeste.Mod.StyleMaskHelper.Masks;
+namespace Celeste.Mod.StyleMaskHelper.Entities;
 
 [Tracked]
 [CustomEntity("StyleMaskHelper/BloomMask")]

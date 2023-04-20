@@ -1,4 +1,4 @@
-﻿using Celeste.Mod.StyleMaskHelper.Masks;
+﻿using Celeste.Mod.StyleMaskHelper.Entities;
 using System;
 
 namespace Celeste.Mod.StyleMaskHelper;

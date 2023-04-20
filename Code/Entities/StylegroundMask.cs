@@ -11,7 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Celeste.Mod.StyleMaskHelper.Masks;
+namespace Celeste.Mod.StyleMaskHelper.Entities;
 
 [Tracked]
 [CustomEntity("StyleMaskHelper/StylegroundMask")]

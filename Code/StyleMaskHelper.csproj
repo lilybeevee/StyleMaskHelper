@@ -35,8 +35,8 @@
     </ItemGroup>
 
     <Target Name="CopyFiles" AfterTargets="Build">
-        <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="bin" />
-        <Copy SourceFiles="$(OutputPath)\$(AssemblyName).pdb" DestinationFolder="bin" />
+        <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder=".." />
+        <Copy SourceFiles="$(OutputPath)\$(AssemblyName).pdb" DestinationFolder=".." />
     </Target>
     
     <PropertyGroup>

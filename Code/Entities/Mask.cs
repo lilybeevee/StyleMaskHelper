@@ -4,7 +4,7 @@ using Monocle;
 using System.Collections.Generic;
 using System;
 
-namespace Celeste.Mod.StyleMaskHelper;
+namespace Celeste.Mod.StyleMaskHelper.Entities;
 
 [Tracked(true)]
 public class Mask : Entity {
@@ -73,7 +73,7 @@ public class Mask : Entity {
         var cameraCenter = SceneAs<Level>().Camera.Position + new Vector2(160f, 90f);
         if (ScrollX != 0f || ScrollY != 0f) {
             var baseCenter = startPosition + new Vector2(Width / 2f, Height / 2f);
-            Center = Calc.Round(baseCenter + (baseCenter - cameraCenter) * new Vector2(ScrollX, ScrollY));
+            Center = (baseCenter + (baseCenter - cameraCenter) * new Vector2(ScrollX, ScrollY)).Round();
         }
         base.Render();
     }
@@ -112,12 +112,12 @@ public class Mask : Entity {
             case FadeType.RightToLeft:
                 offset = GetDrawOffset();
                 source = GetVisibleRect();
-                for (int x = (int)offset.X; x < Width; x++) {
-                    if ((x - (int)offset.X) < source.Width) {
+                for (var x = (int)offset.X; x < Width; x++) {
+                    if (x - (int)offset.X < source.Width) {
                         slices.Add(new MaskSlice(
                             Position + new Vector2(x, offset.Y),
                             new Rectangle(source.X + (x - (int)offset.X), source.Y, 1, source.Height),
-                            Fade == FadeType.LeftToRight ? (x / Width) : (1 - x / Width)
+                            Fade == FadeType.LeftToRight ? x / Width : 1 - x / Width
                         ));
                     }
                 }
@@ -126,12 +126,12 @@ public class Mask : Entity {
             case FadeType.BottomToTop:
                 offset = GetDrawOffset();
                 source = GetVisibleRect();
-                for (int y = (int)offset.Y; y < Height; y++) {
-                    if ((y - (int)offset.Y) < source.Height) {
+                for (var y = (int)offset.Y; y < Height; y++) {
+                    if (y - (int)offset.Y < source.Height) {
                         slices.Add(new MaskSlice(
                             Position + new Vector2(offset.X, y),
                             new Rectangle(source.X, source.Y + (y - (int)offset.Y), source.Width, 1),
-                            Fade == FadeType.TopToBottom ? (y/ Height) : (1 - y / Height)
+                            Fade == FadeType.TopToBottom ? y/ Height : 1 - y / Height
                         ));
                     }
                 }

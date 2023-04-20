@@ -4,7 +4,7 @@ using Monocle;
 using System;
 using System.Collections.Generic;
 
-namespace Celeste.Mod.StyleMaskHelper.Masks;
+namespace Celeste.Mod.StyleMaskHelper.Entities;
 
 [CustomEntity("StyleMaskHelper/AllInOneMask")]
 public class AllInOneMask : Mask {
