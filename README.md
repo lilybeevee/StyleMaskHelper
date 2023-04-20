@@ -28,6 +28,14 @@ The image should only consist of transparency and white, where the white is wher
 
 The mod comes with a few [default fade masks](Graphics/Atlases/Gameplay/fademasks/) you can use, so check those for examples.
 
+## Known Issues
+
+- Custom Fade option has a variety of issues:
+  - Styleground masks dont support transparent stylegrounds (big issue for foregrounds)
+  - Color grade masks look ugly with partial transparency
+  - Bloom masks just dont work with it
+  - Lighting masks dont work with it either (and also break light sources in their area)
+
 ## Screenshots
 
 **Styleground Mask**
@@ -41,41 +49,3 @@ The mod comes with a few [default fade masks](Graphics/Atlases/Gameplay/fademask
 
 **Bloom Mask**
 ![Screenshot](.github/images/bloomMask.png)
-
-## Known Issues
-
-- Custom Fade option has a variety of issues:
-  - Styleground masks dont support transparent stylegrounds (big issue for foregrounds)
-  - Color grade masks look ugly with partial transparency
-  - Bloom masks just dont work with it
-  - Lighting masks dont work with it either (and also break light sources in their area)
-
-## Building
-
-Building the project requires a modified Celeste executable, and since I dont know if I can commit that to a public GitHub you need to make your own (also these are just Windows instructions)
-
-### 1. Download an assembly publicizer
-
-Download **one** of the following:
-
-- [NStrip](https://github.com/bbepis/NStrip)
-- [BepInEx Assembly Publicizer](https://github.com/BepInEx/BepInEx.AssemblyPublicizer)
-
-NStrip is a small portable executable that you can download and place next to the file you want to publicize. \
-BepInEx is convenient if you have the dotnet CLI.
-
-### 2. Create a publicized executable
-
-With the publicizer installed and/or placed next to your Celeste executable, run the following command:
-
-**BepInEx**  
-`assembly-publicizer --strip Celeste.exe`
-
-**NStrip**  
-`NStrip.exe -p Celeste.exe` 
-
-### 3. Place inside the mod
-
-Move your newly generated `Celeste-publicized.exe` or `Celeste-nstrip.exe` to the `lib-stripped` folder inside the Style Mask Helper code, and rename it to `Celeste.exe`.
-
-The project should now be able to access private Celeste variables without errors!
