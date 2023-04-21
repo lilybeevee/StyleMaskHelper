@@ -248,6 +248,10 @@ public class StylegroundMaskRenderer : Renderer {
         Render(scene);
     }
 
+    private bool ShouldRenderMask(StylegroundMask mask) {
+        return !mask.EntityRenderer && (!Foreground || mask.BehindForeground == Behind) && mask.IsVisible();
+    }
+
     public override void Render(Scene scene) {
         var level = scene as Level;
 
@@ -267,37 +271,47 @@ public class StylegroundMaskRenderer : Renderer {
 
         var backdrops = GetBackdrops(Foreground);
 
-        var masks = scene.Tracker.GetEntities<StylegroundMask>().Cast<StylegroundMask>()
-            .Where(mask => !mask.EntityRenderer && (!Foreground || mask.BehindForeground == Behind) && mask.IsVisible());
+        var masks = scene.Tracker.GetEntities<StylegroundMask>().Cast<StylegroundMask>().Where(ShouldRenderMask);
         var fadeMasks = masks.Where(mask => mask.Fade == Mask.FadeType.Custom);
         var batchMasks = masks.Where(mask => mask.Fade != Mask.FadeType.Custom);
 
         if (fadeMasks.Any()) {
             var targets = Engine.Graphics.GraphicsDevice.GetRenderTargets();
+            
+            foreach (var bufferPair in bufferDict) {
+                var tag = bufferPair.Key;
+                var buffer = bufferPair.Value;
 
-            Draw.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, level.Camera.Matrix);
-            foreach (var mask in fadeMasks) {
-                if (!mask.RenderTags.Any(tag => backdrops.ContainsKey(tag) && backdrops[tag].Count > 0))
-                    continue;
+                var drawing = false;
 
-                Engine.Graphics.GraphicsDevice.SetRenderTarget(GameplayBuffers.TempA);
-                Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
+                foreach (var mask in GetMasksWithTag(level, tag)) {
+                    if (mask.Fade != Mask.FadeType.Custom || !ShouldRenderMask(mask))
+                        continue;
 
-                mask.DrawFadeMask();
+                    if (!drawing) {
+                        Engine.Graphics.GraphicsDevice.SetRenderTarget(GameplayBuffers.TempA);
+                        Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
 
-                Engine.Graphics.GraphicsDevice.BlendState = Mask.DestinationAlphaBlend;
-                foreach (var tag in mask.RenderTags) {
-                    if (bufferDict.TryGetValue(tag, out var buffer)) {
-                        foreach (var slice in mask.GetMaskSlices())
-                            Draw.SpriteBatch.Draw(buffer, slice.Position, slice.Source, Color.White);
+                        Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, level.Camera.Matrix);
+
+                        drawing = true;
                     }
+
+                    mask.DrawFadeMask();
                 }
 
-                Engine.Graphics.GraphicsDevice.SetRenderTargets(targets);
-                Engine.Graphics.GraphicsDevice.BlendState = BlendState.AlphaBlend;
-                Draw.SpriteBatch.Draw(GameplayBuffers.TempA, level.Camera.Position, Color.White);
+                if (drawing) {
+                    Draw.SpriteBatch.End();
+
+                    Engine.Graphics.GraphicsDevice.SetRenderTargets(targets);
+
+                    Engine.Graphics.GraphicsDevice.Textures[1] = buffer;
+
+                    Draw.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, StyleMaskModule.MaskEffect, level.Camera.Matrix);
+                    Draw.SpriteBatch.Draw(GameplayBuffers.TempA, level.Camera.Position, Color.White);
+                    Draw.SpriteBatch.End();
+                }
             }
-            Draw.SpriteBatch.End();
         }
 
         if (batchMasks.Any()) {
