@@ -11,6 +11,7 @@ public class StyleMaskModule : EverestModule {
     public static bool CelesteTASLoaded { get; private set; }
 
     public static Effect MaskEffect { get; private set; }
+    public static Effect LightMaskAreaEffect { get; private set; }
 
     public override void Initialize() {
         base.Initialize();
@@ -29,8 +30,10 @@ public class StyleMaskModule : EverestModule {
         if (!firstLoad) return;
 
         var maskEffectAsset = Everest.Content.Get("Effects/StyleMaskHelper/Mask.cso");
+        var lightMaskAreaEffectAsset = Everest.Content.Get("Effects/StyleMaskHelper/LightMaskArea.cso");
 
         MaskEffect = new Effect(Engine.Graphics.GraphicsDevice, maskEffectAsset.Data);
+        LightMaskAreaEffect = new Effect(Engine.Graphics.GraphicsDevice, lightMaskAreaEffectAsset.Data);
     }
 
     public override void Load() {

@@ -11,9 +11,6 @@ namespace Celeste.Mod.StyleMaskHelper.Entities;
 [Tracked]
 [CustomEntity("StyleMaskHelper/LightingMask")]
 public class LightingMask : Mask {
-    public const string FadeBufferNamePrefix = "StyleMaskHelper_LightingMask_fade";
-
-    private static List<VirtualRenderTarget> FadeBuffers = new List<VirtualRenderTarget>();
 
     public static BlendState SubtractAlpha = new BlendState {
         ColorSourceBlend = Blend.Zero,
@@ -68,50 +65,35 @@ public class LightingMask : Mask {
 
     private static void LightingRenderer_Render(On.Celeste.LightingRenderer.orig_Render orig, LightingRenderer self, Scene scene) {
         var lightingMasks = scene.Tracker.GetEntities<LightingMask>();
+
         if (scene is Level level && lightingMasks.Count > 0 && !(StyleMaskModule.CelesteTASLoaded && CelesteTASCompat.SimplifiedLighting)) {
             var lastTargets = Engine.Graphics.GraphicsDevice.GetRenderTargets();
             var lightingRects = new List<Rectangle>();
 
             var fadeMasks = lightingMasks.OfType<LightingMask>().Where(mask => mask.Fade == FadeType.Custom).ToArray();
-            if (FadeBuffers.Count > fadeMasks.Length) {
-                for (var i = fadeMasks.Length; i < FadeBuffers.Count; i++)
-                    FadeBuffers[i].Dispose();
-                FadeBuffers.RemoveRange(fadeMasks.Length, FadeBuffers.Count - fadeMasks.Length);
-            } else {
-                for (var i = FadeBuffers.Count; i < fadeMasks.Length; i++)
-                    FadeBuffers.Add(VirtualContent.CreateRenderTarget(FadeBufferNamePrefix + i, 320, 180));
-            }
+
             if (fadeMasks.Length > 0) {
-                Draw.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, level.Camera.Matrix);
-                for (var i = 0; i < fadeMasks.Length; i++) {
-                    var mask = fadeMasks[i];
-                    mask.BufferIndex = i;
+                Engine.Graphics.GraphicsDevice.SetRenderTarget(GameplayBuffers.TempB);
+                Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
 
-                    var lightingTo = (mask.LightingTo >= 0f ? mask.LightingTo : level.Session.LightingAlphaAdd);
-                    var lightingFrom = (mask.LightingFrom >= 0f ? mask.LightingFrom : level.Session.LightingAlphaAdd);
+                Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, StyleMaskModule.LightMaskAreaEffect, level.Camera.Matrix);
+                foreach (var mask in fadeMasks) {
+                    var lightingTo = (mask.LightingTo >= 0f ? ((mask.AddBase ? level.BaseLightingAlpha : 0f) + mask.LightingTo) : level.BaseLightingAlpha + level.Session.LightingAlphaAdd);
+                    var lightingFrom = (mask.LightingFrom >= 0f ? ((mask.AddBase ? level.BaseLightingAlpha : 0f) + mask.LightingFrom) : level.BaseLightingAlpha + level.Session.LightingAlphaAdd);
 
-                    lightingTo = MathHelper.Clamp((mask.AddBase ? level.BaseLightingAlpha : 0f) + lightingTo, 0f, 1f);
-                    lightingFrom = MathHelper.Clamp((mask.AddBase ? level.BaseLightingAlpha : 0f) + lightingFrom, 0f, 1f);
-
-                    var inverted = lightingTo > lightingFrom;
-                    var baseAlpha = inverted ? (1f - lightingFrom) : lightingFrom;
-                    var subAlpha = lightingFrom - lightingTo;
-
-                    Engine.Graphics.GraphicsDevice.SetRenderTarget(FadeBuffers[i]);
-                    Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
-                    Engine.Graphics.GraphicsDevice.BlendState = BlendState.AlphaBlend;
-                    foreach (var slice in mask.GetMaskSlices())
-                        Draw.SpriteBatch.Draw(GameplayBuffers.Light, slice.Position, slice.Source, Color.White * baseAlpha);
-                    //  Draw.Rect(slice.Position, slice.Source.Width, slice.Source.Height, Color.White * baseAlpha);
-                    Engine.Graphics.GraphicsDevice.BlendState = SubtractAlpha;
-                    mask.DrawFadeMask(Color.White * subAlpha);
-                    if (inverted) {
-                        Engine.Graphics.GraphicsDevice.BlendState = InvertAlpha;
-                        foreach (var slice in mask.GetMaskSlices())
-                            Draw.SpriteBatch.Draw(GameplayBuffers.Light, slice.Position, slice.Source, Color.White);
-                    }
+                    mask.DrawFadeMask(new Color(lightingFrom, lightingTo, 1f));
                 }
                 Draw.SpriteBatch.End();
+
+                Engine.Graphics.GraphicsDevice.SetRenderTarget(GameplayBuffers.TempA);
+                Engine.Graphics.GraphicsDevice.Clear(Color.White);
+
+                Engine.Graphics.GraphicsDevice.Textures[1] = GameplayBuffers.Light;
+
+                Draw.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.NonPremultiplied, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, StyleMaskModule.MaskEffect);
+                Draw.SpriteBatch.Draw(GameplayBuffers.TempB, Vector2.Zero, Color.White);
+                Draw.SpriteBatch.End();
+
                 Engine.Graphics.GraphicsDevice.SetRenderTargets(lastTargets);
             }
 
@@ -127,11 +109,12 @@ public class LightingMask : Mask {
                     var lighting = MathHelper.Clamp(slice.GetValue(lightingFrom, lightingTo), 0f, 1f);
                     if (mask.Fade != FadeType.Custom)
                         Draw.SpriteBatch.Draw(GameplayBuffers.Light, slice.Position, slice.Source, Color.White * lighting);
-                    else
-                        Draw.SpriteBatch.Draw(FadeBuffers[mask.BufferIndex], slice.Position, slice.Source, Color.White);
                     lightingRects.Add(new Rectangle((int)slice.Position.X, (int)slice.Position.Y, slice.Source.Width, slice.Source.Height));
                 }
             }
+
+            if (fadeMasks.Length > 0)
+                Draw.SpriteBatch.Draw(GameplayBuffers.TempA, Vector2.Transform(Vector2.Zero, -level.Camera.Matrix), Color.White);
 
             Draw.SpriteBatch.End();
 
