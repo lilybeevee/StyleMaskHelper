@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Monocle;
 using Mono.Cecil.Cil;
 using Celeste.Mod.Entities;
+using Celeste.Mod.StyleMaskHelper.Compat;
 
 namespace Celeste.Mod.StyleMaskHelper.Entities;
 
@@ -87,6 +88,12 @@ public class BloomMask : Mask {
                     var renderedMask = false;
                     var lastTargets = Engine.Graphics.GraphicsDevice.GetRenderTargets();
                     var bloomMaskLastStrength = selfData.Get<float>(DynDataLastStrengthName);
+
+                    if (StyleMaskModule.CelesteTASLoaded && CelesteTASCompat.SimplifiedBloom) {
+                        selfData.Set(DynDataMaskRectsName, sliceRects);
+                        return;
+                    }
+
                     foreach (BloomMask entity in scene.Tracker.GetEntities<BloomMask>()) {
                         var level = scene as Level;
                         renderedMask = true;

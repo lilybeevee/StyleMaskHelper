@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using Monocle;
 using System.Linq;
+using Celeste.Mod.StyleMaskHelper.Compat;
 
 namespace Celeste.Mod.StyleMaskHelper.Entities;
 
@@ -67,7 +68,7 @@ public class LightingMask : Mask {
 
     private static void LightingRenderer_Render(On.Celeste.LightingRenderer.orig_Render orig, LightingRenderer self, Scene scene) {
         var lightingMasks = scene.Tracker.GetEntities<LightingMask>();
-        if (scene is Level level && lightingMasks.Count > 0) {
+        if (scene is Level level && lightingMasks.Count > 0 && !(StyleMaskModule.CelesteTASLoaded && CelesteTASCompat.SimplifiedLighting)) {
             var lastTargets = Engine.Graphics.GraphicsDevice.GetRenderTargets();
             var lightingRects = new List<Rectangle>();
 
