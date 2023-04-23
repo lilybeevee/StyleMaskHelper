@@ -1,4 +1,5 @@
-﻿using Celeste.Mod.StyleMaskHelper.Entities;
+﻿using Celeste.Mod.StyleMaskHelper.Effects;
+using Celeste.Mod.StyleMaskHelper.Entities;
 using Microsoft.Xna.Framework.Graphics;
 using Monocle;
 using System;
@@ -44,6 +45,10 @@ public class StyleMaskModule : EverestModule {
         StylegroundMaskRenderer.Load();
         LightingMask.Load();
         ColorGradeMask.Load();
+
+        HeatWaveOneMode.Load();
+
+        Everest.Events.Level.OnLoadBackdrop += OnLoadBackdrop;
     }
 
     public override void Unload() {
@@ -51,5 +56,16 @@ public class StyleMaskModule : EverestModule {
         StylegroundMaskRenderer.Unload();
         LightingMask.Unload();
         ColorGradeMask.Unload();
+
+        HeatWaveOneMode.Unload();
+
+        Everest.Events.Level.OnLoadBackdrop -= OnLoadBackdrop;
+    }
+
+    private Backdrop OnLoadBackdrop(MapData map, BinaryPacker.Element child, BinaryPacker.Element above) {
+        if (child.Name.Equals("StyleMaskHelper/HeatWaveOneMode", StringComparison.OrdinalIgnoreCase))
+            return new HeatWaveOneMode((Session.CoreModes)Enum.Parse(typeof(Session.CoreModes), child.Attr("coreMode", "None")), child.AttrBool("colorGrade"));
+
+        return null;
     }
 }

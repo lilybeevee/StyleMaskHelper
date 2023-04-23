@@ -1,5 +1,6 @@
 ﻿using Celeste.Mod.Entities;
 using Celeste.Mod.StyleMaskHelper.Compat;
+using Celeste.Mod.StyleMaskHelper.Effects;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Mono.Cecil.Cil;
@@ -24,7 +25,7 @@ public class StylegroundMask : Mask {
         get => _renderTags;
         set {
             if (value != _renderTags) {
-                RecacheTags(value, _renderTags);
+                RecacheTags(_renderTags, value);
                 value.CollectionChanged += (sender, e) => RecacheTags((IList<string>)e.OldItems, (IList<string>)e.NewItems);
             }
             _renderTags = value;
@@ -80,22 +81,31 @@ public class StylegroundMask : Mask {
 
         // Special case: Automatically add a core mode Color Grade Mask if we're masking a Heat Wave effect
         if (!Foreground) {
-            var needsColorGrade = false;
+            string needsColorGrade = null;
 
             var maskRenderer = StylegroundMaskRenderer.GetRendererInLevel(scene as Level);
             if (maskRenderer != null) {
                 // Check masked backdrops for a Heat Wave effect
-                needsColorGrade = maskRenderer.FGBackdrops.Any(pair =>
-                    RenderTags.Contains(pair.Key) &&
-                    pair.Value.Any(backdrop => IsColorGradeHeatWave(backdrop)));
+                foreach (var backdrop in maskRenderer.AllBackdrops) {
+                    if ((needsColorGrade = GetHeatWaveColorGrade(backdrop)) != null) {
+                        break;
+                    }
+                }
             } else {
                 // Styleground renderer not added yet, check for Heat Wave effect in the level
-                needsColorGrade = (scene as Level).Foreground.Backdrops.Any(backdrop =>
-                    IsColorGradeHeatWave(backdrop) &&
-                    RenderTags.Any(tag => backdrop.Tags.Contains(StylegroundMaskRenderer.TagPrefix + tag)));
+                foreach (var backdrop in (scene as Level).Foreground.Backdrops) {
+                    if ((needsColorGrade = GetHeatWaveColorGrade(backdrop)) != null) {
+                        break;
+                    }
+                }
+                foreach (var backdrop in (scene as Level).Background.Backdrops) {
+                    if ((needsColorGrade = GetHeatWaveColorGrade(backdrop)) != null) {
+                        break;
+                    }
+                }
             }
 
-            if (needsColorGrade) {
+            if (needsColorGrade != null) {
                 scene.Add(new ColorGradeMask(Position, Width, Height) {
                     Fade = Fade,
                     FadeMask = FadeMask,
@@ -106,7 +116,7 @@ public class StylegroundMask : Mask {
                     FadeFrom = 0f,
                     FadeTo = 1f,
                     ColorGradeFrom = "(current)",
-                    ColorGradeTo = "(core)",
+                    ColorGradeTo = needsColorGrade,
                 });
             }
         }
@@ -120,11 +130,29 @@ public class StylegroundMask : Mask {
         base.Removed(scene);
     }
 
+    private string GetHeatWaveColorGrade(Backdrop backdrop) {
+        if (!IsColorGradeHeatWave(backdrop) || !backdrop.Tags.Contains(StylegroundMaskRenderer.TagPrefix + tag))
+            return null;
+
+        if (backdrop is HeatWaveOneMode heatWaveOneMode) {
+            switch (heatWaveOneMode.CoreMode) {
+                case Session.CoreModes.Hot: return "hot";
+                case Session.CoreModes.Cold: return "cold";
+                case Session.CoreModes.None: return "(current)";
+            }
+        }
+
+        return "(core)";
+    }
+
     private bool IsColorGradeHeatWave(Backdrop backdrop) {
         if (backdrop is not HeatWave)
             return false;
 
         if (StyleMaskModule.MaddieHelpingHandLoaded && MaddieHelpingHandCompat.IsHeatWaveNoColorGrade(backdrop))
+            return false;
+
+        if (backdrop is HeatWaveOneMode heatWaveOneMode && !heatWaveOneMode.ColorGrade)
             return false;
 
         return true;
@@ -190,6 +218,7 @@ public class StylegroundMaskRenderer : Renderer {
     // tag -> backdrops
     public Dictionary<string, List<Backdrop>> FGBackdrops = new();
     public Dictionary<string, List<Backdrop>> BGBackdrops = new();
+    public List<Backdrop> AllBackdrops = new();
 
     public Dictionary<string, List<StylegroundMask>> Masks = new();
 
@@ -225,15 +254,17 @@ public class StylegroundMaskRenderer : Renderer {
 
     private static string StripTagPrefix(string tag) => tag.Substring(TagPrefix.Length);
 
-    private static void AddBackdrop(string tag, Backdrop backdrop, Dictionary<string, List<Backdrop>> into) {
+    public static StylegroundMaskRenderer GetRendererInLevel(Level level) => DynamicData.For(level).Get<StylegroundMaskRenderer>(DynDataRendererName);
+
+    private void AddBackdrop(string tag, Backdrop backdrop, Dictionary<string, List<Backdrop>> into) {
         if (!into.ContainsKey(tag)) {
             into.Add(tag, new());
         }
 
         into[tag].Insert(0, backdrop);
-    }
 
-    public static StylegroundMaskRenderer GetRendererInLevel(Level level) => DynamicData.For(level).Get<StylegroundMaskRenderer>(DynDataRendererName);
+        AllBackdrops.Insert(0, backdrop);
+    }
 
     private void ConsumeStylegroundsFrom(List<Backdrop> from, Dictionary<string, List<Backdrop>> into) {
         // reversed loop to allow removing items while iterating

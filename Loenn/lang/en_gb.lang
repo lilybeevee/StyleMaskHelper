@@ -76,3 +76,8 @@ entities.StyleMaskHelper/AllInOneMask.attributes.description.colorGradeFadeTo=Ho
 entities.StyleMaskHelper/AllInOneMask.attributes.description.lightingFrom=The lighting of the region at the start of the fade. (-1 for current value)
 entities.StyleMaskHelper/AllInOneMask.attributes.description.lightingTo=The lighting of the region at the end of the fade. (-1 for current value)
 entities.StyleMaskHelper/AllInOneMask.attributes.description.addBaseLight=Whether the level's darkness alpha will be added to the mask's darkness.
+
+# Heat Wave One Mode
+style.effects.StyleMaskHelper/HeatWaveOneMode.name=Heatwave (One Mode)
+style.effects.StyleMaskHelper/HeatWaveOneMode.description.coreMode=The core mode to use for the heatwave.
+style.effects.StyleMaskHelper/HeatWaveOneMode.description.colorGrade=Whether the level (or mask)'s color grade should be affected by the heatwave.
