@@ -17,20 +17,19 @@ public class AllInOneMask : Mask {
 
         masks = new List<Entity>();
 
-        string styleTag = data.Attr("styleTag");
+        string[] styleTag = data.Attr("styleTag").Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
         float styleAlphaFrom = data.Float("styleAlphaFrom");
         float styleAlphaTo = data.Float("styleAlphaTo", 1f);
         bool entityRenderer = data.Bool("entityRenderer");
         bool styleBehindFg = data.Bool("styleBehindFg", true);
-        if (!string.IsNullOrEmpty(styleTag)) {
-            masks.Add(new StylegroundMask(Position, Width, Height) {
+        if (styleTag.Length > 0) {
+            masks.Add(new StylegroundMask(Position, Width, Height, styleTag) {
                 Fade = Fade,
                 FadeMask = FadeMask,
                 Flag = Flag,
                 NotFlag = NotFlag,
                 ScrollX = ScrollX,
                 ScrollY = ScrollY,
-                RenderTags = styleTag.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries),
                 AlphaFrom = styleAlphaFrom,
                 AlphaTo = styleAlphaTo,
                 EntityRenderer = entityRenderer,

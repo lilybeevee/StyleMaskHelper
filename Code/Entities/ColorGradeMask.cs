@@ -30,10 +30,10 @@ public class ColorGradeMask : Mask {
      * - (core)
     */
 
-    public string ColorGradeFrom;
-    public string ColorGradeTo;
-    public float FadeFrom;
-    public float FadeTo;
+    public string ColorGradeFrom = "(current)";
+    public string ColorGradeTo = "(current)";
+    public float FadeFrom = 0f;
+    public float FadeTo = 1f;
 
     public int BufferIndex;
 

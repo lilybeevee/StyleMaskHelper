@@ -8,6 +8,8 @@ using MonoMod.Cil;
 using MonoMod.Utils;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Reflection;
 
@@ -17,23 +19,40 @@ namespace Celeste.Mod.StyleMaskHelper.Entities;
 [CustomEntity("StyleMaskHelper/StylegroundMask")]
 public class StylegroundMask : Mask {
 
-    public string[] RenderTags = new string[] { };
+    private ObservableCollection<string> _renderTags;
+    public ObservableCollection<string> RenderTags {
+        get => _renderTags;
+        set {
+            if (value != _renderTags) {
+                RecacheTags(value, _renderTags);
+                value.CollectionChanged += (sender, e) => RecacheTags((IList<string>)e.OldItems, (IList<string>)e.NewItems);
+            }
+            _renderTags = value;
+        }
+    }
+
     public bool Foreground = false;
     public bool EntityRenderer = false;
     public bool BehindForeground = false;
 
-    public float AlphaFrom;
-    public float AlphaTo;
+    public float AlphaFrom = 0f;
+    public float AlphaTo = 1f;
 
-    public StylegroundMask(Vector2 position, float width, float height)
+    public StylegroundMask(Vector2 position, float width, float height, IEnumerable<string> tags = null)
         : base(position, width, height) {
 
         Depth = 2000000;
+
+        if (tags != null) {
+            RenderTags = new ObservableCollection<string>(tags);
+        } else {
+            RenderTags = new ObservableCollection<string>();
+        }
     }
 
     public StylegroundMask(EntityData data, Vector2 offset) : base(data, offset) {
         Depth = 2000000;
-        RenderTags = data.Attr("tag").Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        RenderTags = new ObservableCollection<string>(data.Attr("tag").Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries));
         EntityRenderer = data.Bool("entityRenderer");
         BehindForeground = data.Bool("behindFg");
         AlphaFrom = data.Float("alphaFrom", 0f);
@@ -44,7 +63,7 @@ public class StylegroundMask : Mask {
         base.Added(scene);
 
         if (EntityRenderer && !Foreground) {
-            scene.Add(new StylegroundMask(Position, Width, Height) {
+            scene.Add(new StylegroundMask(Position, Width, Height, RenderTags) {
                 Depth = -2000000,
                 Foreground = true,
                 Fade = Fade,
@@ -52,7 +71,6 @@ public class StylegroundMask : Mask {
                 NotFlag = NotFlag,
                 ScrollX = ScrollX,
                 ScrollY = ScrollY,
-                RenderTags = RenderTags,
                 EntityRenderer = EntityRenderer,
                 BehindForeground = BehindForeground,
                 AlphaFrom = AlphaFrom,
@@ -92,6 +110,14 @@ public class StylegroundMask : Mask {
                 });
             }
         }
+
+        RecacheTags(null, RenderTags);
+    }
+
+    public override void Removed(Scene scene) {
+        RecacheTags(RenderTags, null);
+
+        base.Removed(scene);
     }
 
     private bool IsColorGradeHeatWave(Backdrop backdrop) {
@@ -114,6 +140,30 @@ public class StylegroundMask : Mask {
                         Draw.SpriteBatch.Draw(buffer, slice.Position, slice.Source, Color.White * slice.GetValue(AlphaFrom, AlphaTo));
                     }
                 }
+            }
+        }
+    }
+
+    private void RecacheTags(IEnumerable<string> oldTags, IEnumerable<string> newTags) {
+        StylegroundMaskRenderer renderer;
+
+        if (Scene == null || (renderer = StylegroundMaskRenderer.GetRendererInLevel(Scene as Level)) == null)
+            return;
+
+        if (oldTags != null) {
+            foreach (var tag in oldTags) {
+                if (!renderer.Masks.TryGetValue(tag, out var cachedMasks))
+                    continue;
+                cachedMasks.Remove(this);
+            }
+        }
+
+        if (newTags != null) {
+            foreach (var tag in newTags) {
+                if (!renderer.Masks.TryGetValue(tag, out var cachedMasks))
+                    continue;
+                if (!cachedMasks.Contains(this))
+                    cachedMasks.Add(this);
             }
         }
     }
