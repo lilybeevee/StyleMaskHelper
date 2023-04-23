@@ -90,7 +90,7 @@ public class LightingMask : Mask {
 
                 Engine.Graphics.GraphicsDevice.Textures[1] = GameplayBuffers.Light;
 
-                Draw.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.NonPremultiplied, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, StyleMaskModule.MaskEffect);
+                Draw.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, StyleMaskModule.MaskEffect);
                 Draw.SpriteBatch.Draw(GameplayBuffers.TempB, Vector2.Zero, Color.White);
                 Draw.SpriteBatch.End();
 

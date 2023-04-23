@@ -8,7 +8,7 @@ float4 effect(float2 uv : TEXCOORD0, float4 color : COLOR0) : COLOR
     float alpha = tex2D(tex, uv).a;
     alpha = (alpha * (alphaTo - alphaFrom)) + alphaFrom;
 
-    return float4(1, 1, 1, alpha);
+    return float4(alpha, alpha, alpha, alpha);
 }
 
 technique CustomFadeRange
