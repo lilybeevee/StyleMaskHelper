@@ -3,23 +3,23 @@ module StyleMaskHelperMasks
 using ..Ahorn, Maple
 
 @mapdef Entity "StyleMaskHelper/StylegroundMask" StylegroundMask(x::Integer, y::Integer, width::Integer=8, height::Integer=8,
-    scrollX::Number=0.0, scrollY::Number=0.0, fade::String="None", customFade::String="circle", flag::String="", notFlag::Bool=false,
+    scrollX::Number=0.0, scrollY::Number=0.0, fade::String="None", customFade::String="", flag::String="", notFlag::Bool=false,
     tag::String="", alphaFrom::Number=0.0, alphaTo::Number=1.0, entityRenderer::Bool=false, behindFg::Bool=true)
 
 @mapdef Entity "StyleMaskHelper/ColorGradeMask" ColorGradeMask(x::Integer, y::Integer, width::Integer=8, height::Integer=8,
-    scrollX::Number=0.0, scrollY::Number=0.0, fade::String="None", customFade::String="circle", flag::String="", notFlag::Bool=false,
+    scrollX::Number=0.0, scrollY::Number=0.0, fade::String="None", customFade::String="", flag::String="", notFlag::Bool=false,
     colorGradeFrom::String="(current)", colorGradeTo::String="none", fadeFrom::Number=0.0, fadeTo::Number=1.0)
 
 @mapdef Entity "StyleMaskHelper/BloomMask" BloomMask(x::Integer, y::Integer, width::Integer=8, height::Integer=8,
-    scrollX::Number=0.0, scrollY::Number=0.0, fade::String="None", customFade::String="circle", flag::String="", notFlag::Bool=false,
+    scrollX::Number=0.0, scrollY::Number=0.0, fade::String="None", customFade::String="", flag::String="", notFlag::Bool=false,
     baseFrom::Number=-1.0, baseTo::Number=-1.0, strengthFrom::Number=-1.0, strengthTo::Number=-1.0)
 
 @mapdef Entity "StyleMaskHelper/LightingMask" LightingMask(x::Integer, y::Integer, width::Integer=8, height::Integer=8,
-    scrollX::Number=0.0, scrollY::Number=0.0, fade::String="None", customFade::String="circle", flag::String="", notFlag::Bool=false,
+    scrollX::Number=0.0, scrollY::Number=0.0, fade::String="None", customFade::String="", flag::String="", notFlag::Bool=false,
     lightingFrom::Number=-1.0, lightingTo::Number=0.0, addBase::Bool=true)
 
 @mapdef Entity "StyleMaskHelper/AllInOneMask" AllInOneMask(x::Integer, y::Integer, width::Integer=8, height::Integer=8,
-    scrollX::Number=0.0, scrollY::Number=0.0, fade::String="None", customFade::String="circle", flag::String="", notFlag::Bool=false,
+    scrollX::Number=0.0, scrollY::Number=0.0, fade::String="None", customFade::String="", flag::String="", notFlag::Bool=false,
     styleTag::String="", styleAlphaFrom::Number=0.0, styleAlphaTo::Number=1.0, entityRenderer::Bool=false, styleBehindFg::Bool=true,
     colorGradeFrom::String="(current)", colorGradeTo::String="(current)", colorGradeFadeFrom::Number=0.0, colorGradeFadeTo::Number=1.0,
     bloomBaseFrom::Number=-1.0, bloomBaseTo::Number=-1.0, bloomStrengthFrom::Number=-1.0, bloomStrengthTo::Number=-1.0,

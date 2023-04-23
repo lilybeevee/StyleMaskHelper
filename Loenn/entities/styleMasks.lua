@@ -144,7 +144,7 @@ local commonPlacementData = {
     scrollX = 0.0,
     scrollY = 0.0,
     fade = "None",
-    customFade = "circle",
+    customFade = "",
     flag = "",
     notFlag = false
 }
