@@ -11,7 +11,8 @@ public class StyleMaskModule : EverestModule {
     public static bool CelesteTASLoaded { get; private set; }
 
     public static Effect MaskEffect { get; private set; }
-    public static Effect LightMaskAreaEffect { get; private set; }
+    public static Effect StrengthMask { get; private set; }
+    public static Effect CustomFadeRange { get; private set; }
 
     public override void Initialize() {
         base.Initialize();
@@ -30,10 +31,12 @@ public class StyleMaskModule : EverestModule {
         if (!firstLoad) return;
 
         var maskEffectAsset = Everest.Content.Get("Effects/StyleMaskHelper/Mask.cso");
-        var lightMaskAreaEffectAsset = Everest.Content.Get("Effects/StyleMaskHelper/LightMaskArea.cso");
+        var strengthMaskAsset = Everest.Content.Get("Effects/StyleMaskHelper/StrengthMask.cso");
+        var customFadeRangeAsset = Everest.Content.Get("Effects/StyleMaskHelper/CustomFadeRange.cso");
 
         MaskEffect = new Effect(Engine.Graphics.GraphicsDevice, maskEffectAsset.Data);
-        LightMaskAreaEffect = new Effect(Engine.Graphics.GraphicsDevice, lightMaskAreaEffectAsset.Data);
+        StrengthMask = new Effect(Engine.Graphics.GraphicsDevice, strengthMaskAsset.Data);
+        CustomFadeRange = new Effect(Engine.Graphics.GraphicsDevice, customFadeRangeAsset.Data);
     }
 
     public override void Load() {

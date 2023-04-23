@@ -2,16 +2,16 @@ sampler tex : register(s0);
 
 float4 effect(float2 uv : TEXCOORD0, float4 color : COLOR0) : COLOR
 {
-    float lightFrom = color.r;
-    float lightTo = color.g;
+    float alphaFrom = color.r;
+    float alphaTo = color.g;
 
     float alpha = tex2D(tex, uv).a;
-    alpha = (alpha * (lightTo - lightFrom)) + lightFrom;
+    alpha = (alpha * (alphaTo - alphaFrom)) + alphaFrom;
 
     return float4(1, 1, 1, alpha);
 }
 
-technique LightMaskAreaEffect
+technique CustomFadeRange
 {
     pass pass0
     {

@@ -76,7 +76,7 @@ public class LightingMask : Mask {
                 Engine.Graphics.GraphicsDevice.SetRenderTarget(GameplayBuffers.TempB);
                 Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
 
-                Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, StyleMaskModule.LightMaskAreaEffect, level.Camera.Matrix);
+                Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, StyleMaskModule.CustomFadeRange, level.Camera.Matrix);
                 foreach (var mask in fadeMasks) {
                     var lightingTo = (mask.LightingTo >= 0f ? ((mask.AddBase ? level.BaseLightingAlpha : 0f) + mask.LightingTo) : level.BaseLightingAlpha + level.Session.LightingAlphaAdd);
                     var lightingFrom = (mask.LightingFrom >= 0f ? ((mask.AddBase ? level.BaseLightingAlpha : 0f) + mask.LightingFrom) : level.BaseLightingAlpha + level.Session.LightingAlphaAdd);
