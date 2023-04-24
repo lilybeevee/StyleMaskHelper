@@ -252,6 +252,17 @@ public class StylegroundMaskRenderer : Renderer {
         return buffers[tag];
     }
 
+    private static void UnloadBuffers() {
+        foreach (var buffer in FgBuffers.Values)
+            buffer.Dispose();
+
+        foreach (var buffer in BgBuffers.Values)
+            buffer.Dispose();
+
+        FgBuffers.Clear();
+        BgBuffers.Clear();
+    }
+
     private static bool TagIsMaskTag(string tag) => tag.StartsWith(TagPrefix);
 
     private static string StripTagPrefix(string tag) => tag.Substring(TagPrefix.Length);
@@ -434,12 +445,14 @@ public class StylegroundMaskRenderer : Renderer {
     public static void Load() {
         On.Celeste.Level.LoadLevel += Level_LoadLevel;
         IL.Celeste.Level.Render += Level_Render;
+        On.Celeste.Level.End += Level_End;
         On.Celeste.HeatWave.Update += HeatWave_Update;
     }
 
     public static void Unload() {
         On.Celeste.Level.LoadLevel -= Level_LoadLevel;
         IL.Celeste.Level.Render -= Level_Render;
+        On.Celeste.Level.End -= Level_End;
         On.Celeste.HeatWave.Update -= HeatWave_Update;
     }
 
@@ -471,6 +484,11 @@ public class StylegroundMaskRenderer : Renderer {
         }
 
         GetRendererInLevel(self).Masks.Clear();
+    }
+
+    private static void Level_End(On.Celeste.Level.orig_End orig, Level self) {
+        orig(self);
+        UnloadBuffers();
     }
 
     private static void Level_Render(ILContext il) {
