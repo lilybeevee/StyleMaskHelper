@@ -39,23 +39,25 @@ public class HeatWaveOneMode : HeatWave {
             base.Update(scene);
         }
 
-        var renderer = StylegroundMaskRenderer.GetRendererInLevel(level);
-
-        if (!masked || renderer == null)
-            return;
-
         var maxHeat = 0f;
 
-        foreach (var backdropList in renderer.FGBackdrops.Values) {
-            foreach (var backdrop in backdropList) {
-                if (backdrop is not HeatWave heatWave)
+        var renderer = StylegroundMaskRenderer.GetRendererInLevel(level);
+
+        if (!masked || renderer == null) {
+            foreach (var backdrop in level.Foreground.Backdrops) {
+                if (backdrop is not HeatWave heatWave || !backdrop.Visible)
                     continue;
                 maxHeat = Math.Max(maxHeat, heatWave.heat);
             }
-        }
-        foreach (var backdropList in renderer.BGBackdrops.Values) {
-            foreach (var backdrop in backdropList) {
-                if (backdrop is not HeatWave heatWave)
+            foreach (var backdrop in level.Background.Backdrops) {
+                if (backdrop is not HeatWave heatWave || !backdrop.Visible)
+                    continue;
+                maxHeat = Math.Max(maxHeat, heatWave.heat);
+            }
+    
+        } else {
+            foreach (var backdrop in renderer.AllBackdrops) {
+                if (backdrop is not HeatWave heatWave || !backdrop.Visible)
                     continue;
                 maxHeat = Math.Max(maxHeat, heatWave.heat);
             }

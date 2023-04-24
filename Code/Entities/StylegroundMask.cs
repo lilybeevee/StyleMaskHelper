@@ -98,9 +98,11 @@ public class StylegroundMask : Mask {
                         break;
                     }
                 }
-                foreach (var backdrop in (scene as Level).Background.Backdrops) {
-                    if ((needsColorGrade = GetHeatWaveColorGrade(backdrop)) != null) {
-                        break;
+                if (needsColorGrade == null) {
+                    foreach (var backdrop in (scene as Level).Background.Backdrops) {
+                        if ((needsColorGrade = GetHeatWaveColorGrade(backdrop)) != null) {
+                            break;
+                        }
                     }
                 }
             }
@@ -131,7 +133,7 @@ public class StylegroundMask : Mask {
     }
 
     private string GetHeatWaveColorGrade(Backdrop backdrop) {
-        if (!IsColorGradeHeatWave(backdrop) || !backdrop.Tags.Contains(StylegroundMaskRenderer.TagPrefix + tag))
+        if (!IsColorGradeHeatWave(backdrop) || !RenderTags.Any(tag => backdrop.Tags.Contains(StylegroundMaskRenderer.TagPrefix + tag)))
             return null;
 
         if (backdrop is HeatWaveOneMode heatWaveOneMode) {
@@ -410,18 +412,34 @@ public class StylegroundMaskRenderer : Renderer {
         }
     }
 
+    public static void RenderHeatWaveDisplacement(Level level) {
+        var maskRenderer = GetRendererInLevel(level);
+
+        foreach (var backdropEntry in maskRenderer.FGBackdrops) {
+            var tag = backdropEntry.Key;
+            var backdrops = backdropEntry.Value;
+
+            if (!backdrops.Any(backdrop => backdrop is HeatWave heatWave && heatWave.heat > 0f))
+                continue;
+
+            foreach (var mask in maskRenderer.GetMasksWithTag(level, tag)) {
+                foreach (var slice in mask.GetMaskSlices()) {
+                    Draw.Rect(slice.Position.X, slice.Position.Y, slice.Source.Width, slice.Source.Height, new Color(0.5f, 0.5f, 0.1f, 1f));
+                }
+            }
+        }
+    }
+
     #region Hooks
     public static void Load() {
         On.Celeste.Level.LoadLevel += Level_LoadLevel;
         IL.Celeste.Level.Render += Level_Render;
-        IL.Celeste.DisplacementRenderer.BeforeRender += DisplacementRenderer_BeforeRender;
         On.Celeste.HeatWave.Update += HeatWave_Update;
     }
 
     public static void Unload() {
         On.Celeste.Level.LoadLevel -= Level_LoadLevel;
         IL.Celeste.Level.Render -= Level_Render;
-        IL.Celeste.DisplacementRenderer.BeforeRender -= DisplacementRenderer_BeforeRender;
         On.Celeste.HeatWave.Update -= HeatWave_Update;
     }
 
@@ -487,49 +505,6 @@ public class StylegroundMaskRenderer : Renderer {
             cursor.EmitDelegate<Action<Level>>((level) => {
                 GetRendererInLevel(level)?.RenderWith(level, true, behind: false, skipBuffers: true);
             });
-        }
-    }
-
-    private static void DisplacementRenderer_BeforeRender(ILContext il) {
-        var cursor = new ILCursor(il);
-
-        var getHeatWaveMethod = typeof(BackdropRenderer)
-            .GetMethod("Get", BindingFlags.Instance | BindingFlags.Public)
-            .MakeGenericMethod(typeof(HeatWave));
-
-        int heatWaveLoc = -1;
-        int levelArg = -1;
-        if (!cursor.TryGotoNext(MoveType.AfterLabel,
-            instr => instr.MatchLdarg(out levelArg),
-            instr => instr.MatchIsinst<Level>(),
-            instr => instr.MatchLdfld<Level>("Foreground"),
-            instr => instr.MatchCallvirt(getHeatWaveMethod),
-            instr => instr.MatchStloc(out heatWaveLoc))) {
-
-            Logger.Log("StyleMaskHelper/StylegroundMaskRenderer", $"Failed to find heat wave code in DisplacementRenderer.BeforeRender - Heat Wave displacement disabled");
-            return;
-        }
-
-        cursor.Emit(OpCodes.Ldarg, levelArg);
-        cursor.Emit(OpCodes.Isinst, typeof(Level));
-        cursor.EmitDelegate(RenderHeatWaveDisplacement);
-    }
-
-    private static void RenderHeatWaveDisplacement(Level level) {
-        var maskRenderer = GetRendererInLevel(level);
-
-        foreach (var backdropEntry in maskRenderer.FGBackdrops) {
-            var tag = backdropEntry.Key;
-            var backdrops = backdropEntry.Value;
-
-            if (!backdrops.Any(backdrop => backdrop is HeatWave heatWave && heatWave.heat > 0f))
-                continue;
-
-            foreach (var mask in maskRenderer.GetMasksWithTag(level, tag)) {
-                foreach (var slice in mask.GetMaskSlices()) {
-                    Draw.Rect(slice.Position.X, slice.Position.Y, slice.Source.Width, slice.Source.Height, new Color(0.5f, 0.5f, 0.1f, 1f));
-                }
-            }
         }
     }
     #endregion
