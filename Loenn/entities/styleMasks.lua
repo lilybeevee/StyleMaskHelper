@@ -159,11 +159,11 @@ local commonFieldInfo = {
     },
     colorGradeFrom = {
         options = colorGradeOptions,
-        editable = false
+        editable = true
     },
     colorGradeTo = {
         options = colorGradeOptions,
-        editable = false
+        editable = true
     }
 }
 
