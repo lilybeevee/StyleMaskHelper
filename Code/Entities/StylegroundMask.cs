@@ -246,7 +246,7 @@ public class StylegroundMaskRenderer : Renderer {
 
         if (!buffers.ContainsKey(tag)) {
             var namePrefix = foreground ? MaskBufferFgNamePrefix : MaskBufferBgNamePrefix;
-            buffers.Add(tag, VirtualContent.CreateRenderTarget(namePrefix + tag, 320, 180, preserve: false));
+            buffers.Add(tag, VirtualContent.CreateRenderTarget(namePrefix + tag, 320, 180));
         }
 
         return buffers[tag];
