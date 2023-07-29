@@ -12,7 +12,6 @@ local stylegroundMask = {
             tag = "",
             alphaFrom = 0.0,
             alphaTo = 1.0,
-            entityRenderer = false,
             behindFg = true
         }
     },
@@ -106,7 +105,6 @@ local allInOneMask = {
             styleTag = "",
             styleAlphaFrom = 0.0,
             styleAlphaTo = 1.0,
-            entityRenderer = false,
             styleBehindFg = true,
             colorGradeFrom = "(current)",
             colorGradeTo = "(current)",
