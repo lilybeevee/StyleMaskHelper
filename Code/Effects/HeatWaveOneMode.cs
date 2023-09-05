@@ -41,7 +41,7 @@ public class HeatWaveOneMode : HeatWave {
 
         var maxHeat = 0f;
 
-        var renderer = StylegroundMaskRenderer.GetRendererInLevel(level);
+        var renderer = StylegroundMaskRenderer.Instance;
 
         if (!masked || renderer == null) {
             foreach (var backdrop in level.Foreground.Backdrops) {

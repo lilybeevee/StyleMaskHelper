@@ -83,7 +83,7 @@ public class StylegroundMask : Mask {
         if (!Foreground) {
             string needsColorGrade = null;
 
-            var maskRenderer = StylegroundMaskRenderer.GetRendererInLevel(scene as Level);
+            var maskRenderer = StylegroundMaskRenderer.Instance;
             if (maskRenderer != null) {
                 // Check masked backdrops for a Heat Wave effect
                 foreach (var backdrop in maskRenderer.AllBackdrops) {
@@ -177,7 +177,7 @@ public class StylegroundMask : Mask {
     private void RecacheTags(IEnumerable<string> oldTags, IEnumerable<string> newTags) {
         StylegroundMaskRenderer renderer;
 
-        if (Scene == null || (renderer = StylegroundMaskRenderer.GetRendererInLevel(Scene as Level)) == null)
+        if (Scene == null || (renderer = StylegroundMaskRenderer.Instance) == null)
             return;
 
         if (oldTags != null) {
@@ -204,6 +204,11 @@ public class StylegroundMaskRenderer : Renderer {
     public const string MaskBufferFgNamePrefix = "StyleMaskHelper_StylegroundMask_fg_";
     public const string MaskBufferBgNamePrefix = "StyleMaskHelper_StylegroundMask_bg_";
     public const string DynDataRendererName = "StyleMaskHelper_StylegroundMaskRenderer";
+
+    /// <summary>
+    /// The current instance of the Styleground Mask renderer.
+    /// </summary>
+    public static StylegroundMaskRenderer Instance;
 
     /// <summary>
     /// used internally to render consumed stylegrounds
@@ -266,8 +271,6 @@ public class StylegroundMaskRenderer : Renderer {
     private static bool TagIsMaskTag(string tag) => tag.StartsWith(TagPrefix);
 
     private static string StripTagPrefix(string tag) => tag.Substring(TagPrefix.Length);
-
-    public static StylegroundMaskRenderer GetRendererInLevel(Level level) => DynamicData.For(level).Get<StylegroundMaskRenderer>(DynDataRendererName);
 
     private void AddBackdrop(string tag, Backdrop backdrop, Dictionary<string, List<Backdrop>> into) {
         if (!into.ContainsKey(tag)) {
@@ -424,16 +427,14 @@ public class StylegroundMaskRenderer : Renderer {
     }
 
     public static void RenderHeatWaveDisplacement(Level level) {
-        var maskRenderer = GetRendererInLevel(level);
-
-        foreach (var backdropEntry in maskRenderer.FGBackdrops) {
+        foreach (var backdropEntry in Instance.FGBackdrops) {
             var tag = backdropEntry.Key;
             var backdrops = backdropEntry.Value;
 
             if (!backdrops.Any(backdrop => backdrop is HeatWave heatWave && heatWave.heat > 0f))
                 continue;
 
-            foreach (var mask in maskRenderer.GetMasksWithTag(level, tag)) {
+            foreach (var mask in Instance.GetMasksWithTag(level, tag)) {
                 foreach (var slice in mask.GetMaskSlices()) {
                     Draw.Rect(slice.Position.X, slice.Position.Y, slice.Source.Width, slice.Source.Height, new Color(0.5f, 0.5f, 0.1f, 1f));
                 }
@@ -477,18 +478,19 @@ public class StylegroundMaskRenderer : Renderer {
         orig(self, playerIntro, isFromLoader);
 
         if (isFromLoader) {
-            var renderer = new StylegroundMaskRenderer();
-            DynamicData.For(self).Set(DynDataRendererName, renderer);
-            self.Add(renderer);
-            renderer.ConsumeStylegrounds(self);
+            Instance = new StylegroundMaskRenderer();
+            Instance.ConsumeStylegrounds(self);
+
+            self.Add(Instance);
         }
 
-        GetRendererInLevel(self).Masks.Clear();
+        Instance.Masks.Clear();
     }
 
     private static void Level_End(On.Celeste.Level.orig_End orig, Level self) {
         orig(self);
         UnloadBuffers();
+        Instance = null;
     }
 
     private static void Level_Render(ILContext il) {
@@ -501,7 +503,7 @@ public class StylegroundMaskRenderer : Renderer {
             instr => instr.MatchCallvirt<Renderer>("Render"))) {
             cursor.Emit(OpCodes.Ldarg_0);
             cursor.EmitDelegate<Action<Level>>((level) => {
-                GetRendererInLevel(level)?.RenderWith(level, false);
+                Instance?.RenderWith(level, false);
             });
         }
 
@@ -514,14 +516,14 @@ public class StylegroundMaskRenderer : Renderer {
             instr => instr.MatchCallvirt<Renderer>("Render"))) {
             cursor.Emit(OpCodes.Ldarg_0);
             cursor.EmitDelegate<Action<Level>>((level) => {
-                GetRendererInLevel(level)?.RenderWith(level, true, behind: true);
+                Instance?.RenderWith(level, true, behind: true);
             });
 
             cursor.Index += 4;
 
             cursor.Emit(OpCodes.Ldarg_0);
             cursor.EmitDelegate<Action<Level>>((level) => {
-                GetRendererInLevel(level)?.RenderWith(level, true, behind: false, skipBuffers: true);
+                Instance?.RenderWith(level, true, behind: false, skipBuffers: true);
             });
         }
     }

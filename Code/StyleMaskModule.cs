@@ -1,4 +1,5 @@
-﻿using Celeste.Mod.StyleMaskHelper.Effects;
+﻿using Celeste.Mod.StyleMaskHelper.Compat;
+using Celeste.Mod.StyleMaskHelper.Effects;
 using Celeste.Mod.StyleMaskHelper.Entities;
 using Microsoft.Xna.Framework.Graphics;
 using Monocle;
@@ -10,6 +11,7 @@ public class StyleMaskModule : EverestModule {
 
     public static bool MaddieHelpingHandLoaded { get; private set; }
     public static bool CelesteTASLoaded { get; private set; }
+    public static bool SpeedrunToolLoaded { get; private set; }
 
     public static Effect MaskEffect { get; private set; }
     public static Effect StrengthMask { get; private set; }
@@ -26,6 +28,13 @@ public class StyleMaskModule : EverestModule {
             Name = "CelesteTAS",
             Version = new Version(3, 25, 9)
         });
+        SpeedrunToolLoaded = Everest.Loader.DependencyLoaded(new EverestModuleMetadata {
+            Name = "SpeedrunTool",
+            Version = new Version(3, 21, 0)
+        });
+
+        if (SpeedrunToolLoaded)
+            SpeedrunToolCompat.Initialize();
     }
 
     public override void LoadContent(bool firstLoad) {
