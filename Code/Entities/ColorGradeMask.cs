@@ -8,6 +8,7 @@ using Monocle;
 using Mono.Cecil.Cil;
 using Celeste.Mod.Entities;
 using System.Drawing.Text;
+using Celeste.Mod.StyleMaskHelper.Compat;
 
 namespace Celeste.Mod.StyleMaskHelper.Entities;
 
@@ -227,11 +228,21 @@ public class ColorGradeMask : Mask {
                     var currentTo = GFX.ColorGrades.GetOrDefault(level.Session.ColorGrade, GFX.ColorGrades["none"]);
                     var currentValue = ColorGrade.Percent;
 
+                    var zoom = level.Zoom;
+
+                    if (StyleMaskModule.ExtendedVariantsLoaded) {
+                        zoom *= ExtendedVariantCompat.ZoomLevel;
+                    }
+
                     var screenSize = new Vector2(320f, 180f);
                     var scaledScreen = screenSize / level.ZoomTarget;
                     var focusOffset = (level.ZoomTarget != 1f) ? ((level.ZoomFocusPoint - scaledScreen / 2f) / (screenSize - scaledScreen) * screenSize) : Vector2.Zero;
                     var paddingOffset = new Vector2(level.ScreenPadding, level.ScreenPadding * 0.5625f);
-                    var scale = level.Zoom * ((320f - level.ScreenPadding * 2f) / 320f);
+                    var scale = zoom * ((320f - level.ScreenPadding * 2f) / 320f);
+
+                    if (StyleMaskModule.ExtendedVariantsLoaded) {
+                        ExtendedVariantCompat.ApplyUpsideDownEffect(ref paddingOffset, ref focusOffset);
+                    }
 
                     var zoomMatrix = Matrix.CreateTranslation(new Vector3(-focusOffset, 0f))
                                    * Matrix.CreateScale(scale)
@@ -239,6 +250,10 @@ public class ColorGradeMask : Mask {
 
                     if (SaveData.Instance.Assists.MirrorMode) {
                         zoomMatrix *= Matrix.CreateScale(-1f, 1f, 1f) * Matrix.CreateTranslation(new Vector3(320f, 0f, 0f));
+                    }
+
+                    if (StyleMaskModule.ExtendedVariantsLoaded && ExtendedVariantCompat.UpsideDown) {
+                        zoomMatrix *= Matrix.CreateScale(1f, -1f, 1f) * Matrix.CreateTranslation(new Vector3(0f, 180f, 0f));
                     }
 
                     var batchMasks = colorGradeMasks.Where(mask => (mask as ColorGradeMask).Fade != FadeType.Custom);

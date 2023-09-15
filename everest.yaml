@@ -11,3 +11,5 @@
       Version: 3.25.9
     - Name: SpeedrunTool
       Version: 3.21.0
+    - Name: ExtendedVariantMode
+      Version: 0.28.1

@@ -32,6 +32,7 @@
     <ItemGroup>
         <Reference Include="lib-stripped\MaxHelpingHand.dll" />
         <Reference Include="lib-stripped\CelesteTAS-EverestInterop.dll" />
+        <Reference Include="lib-stripped\ExtendedVariantMode.dll" />
     </ItemGroup>
 
     <Target Name="CopyFiles" AfterTargets="Build">

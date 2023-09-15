@@ -12,6 +12,7 @@ public class StyleMaskModule : EverestModule {
     public static bool MaddieHelpingHandLoaded { get; private set; }
     public static bool CelesteTASLoaded { get; private set; }
     public static bool SpeedrunToolLoaded { get; private set; }
+    public static bool ExtendedVariantsLoaded { get; private set; }
 
     public static Effect MaskEffect { get; private set; }
     public static Effect StrengthMask { get; private set; }
@@ -31,6 +32,10 @@ public class StyleMaskModule : EverestModule {
         SpeedrunToolLoaded = Everest.Loader.DependencyLoaded(new EverestModuleMetadata {
             Name = "SpeedrunTool",
             Version = new Version(3, 21, 0)
+        });
+        ExtendedVariantsLoaded = Everest.Loader.DependencyLoaded(new EverestModuleMetadata {
+            Name = "ExtendedVariantMode",
+            Version = new Version(0, 28, 1)
         });
 
         if (SpeedrunToolLoaded)
