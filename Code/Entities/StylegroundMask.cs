@@ -477,7 +477,10 @@ public class StylegroundMaskRenderer : Renderer {
     private static void Level_LoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
         orig(self, playerIntro, isFromLoader);
 
-        if (isFromLoader) {
+        if (isFromLoader || Instance == null) {
+            // this used to be stored and retrived in a DynamicData variable, however
+            // the variable wasn't affected by savestates, so it uses a static instance now
+            // TODO: find a way around this maybe?
             Instance = new StylegroundMaskRenderer();
             Instance.ConsumeStylegrounds(self);
 
