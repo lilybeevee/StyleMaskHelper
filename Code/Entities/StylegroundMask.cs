@@ -477,7 +477,11 @@ public class StylegroundMaskRenderer : Renderer {
     private static void Level_LoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
         orig(self, playerIntro, isFromLoader);
 
-        if (isFromLoader || Instance == null) {
+        if (isFromLoader || Instance == null || !self.RendererList.Renderers.Contains(Instance)) {
+            if (Instance != null) {
+                UnloadBuffers();
+            }
+
             // this used to be stored and retrived in a DynamicData variable, however
             // the variable wasn't affected by savestates, so it uses a static instance now
             // TODO: find a way around this maybe?
@@ -492,8 +496,11 @@ public class StylegroundMaskRenderer : Renderer {
 
     private static void Level_End(On.Celeste.Level.orig_End orig, Level self) {
         orig(self);
-        UnloadBuffers();
-        Instance = null;
+
+        if (Engine.NextScene is LevelExit || Engine.NextScene is OverworldLoader || Engine.NextScene is LevelLoader) {
+            UnloadBuffers();
+            Instance = null;
+        }
     }
 
     private static void Level_Render(ILContext il) {
