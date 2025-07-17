@@ -4,6 +4,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using System;
+using Celeste.Mod.StyleMaskHelper.Compat;
 
 namespace Celeste.Mod.StyleMaskHelper;
 
@@ -26,7 +27,7 @@ public class StylegroundLightingHandler {
     private static void GameplayBuffers_Create(On.Celeste.GameplayBuffers.orig_Create orig) {
         orig();
         Buffer?.Dispose();
-        Buffer = VirtualContent.CreateRenderTarget(BufferName, 320, 180);
+        Buffer = VirtualContent.CreateRenderTarget(BufferName, ZoomOutCompat.BufferWidth, ZoomOutCompat.BufferHeight);
     }
 
     private static void BackdropRenderer_Render(ILContext il) {
@@ -57,7 +58,7 @@ public class StylegroundLightingHandler {
             renderer.EndSpritebatch();
 
             var lastTargets = Engine.Instance.GraphicsDevice.GetRenderTargets();
-            Engine.Instance.GraphicsDevice.SetRenderTarget(Buffer);
+            Engine.Instance.GraphicsDevice.SetRenderTarget(ZoomOutCompat.EnsureBufferDimensions(Buffer));
             Engine.Instance.GraphicsDevice.Clear(Color.Transparent);
 
             if (backdrop.UseSpritebatch && !renderer.usingSpritebatch) {

@@ -252,10 +252,10 @@ public class StylegroundMaskRenderer : Renderer {
 
         if (!buffers.ContainsKey(tag)) {
             var namePrefix = foreground ? MaskBufferFgNamePrefix : MaskBufferBgNamePrefix;
-            buffers.Add(tag, VirtualContent.CreateRenderTarget(namePrefix + tag, 320, 180));
+            buffers.Add(tag, VirtualContent.CreateRenderTarget(namePrefix + tag, ZoomOutCompat.BufferWidth, ZoomOutCompat.BufferHeight));
         }
 
-        return buffers[tag];
+        return ZoomOutCompat.EnsureBufferDimensions(buffers[tag]);
     }
 
     private static void UnloadBuffers() {
@@ -306,7 +306,7 @@ public class StylegroundMaskRenderer : Renderer {
     public static bool IsEntityInView(Level level, Entity entity) {
         Camera camera = level.Camera;
         return new Rectangle((int)entity.X, (int)entity.Y, (int)entity.Width, (int)entity.Height)
-               .Intersects(new Rectangle((int)camera.X, (int)camera.Y, 320, 180));
+               .Intersects(new Rectangle((int)camera.X, (int)camera.Y, camera.Viewport.Width, camera.Viewport.Height));
     }
 
     public bool AnyMaskIsInView(Level level, string tag) {

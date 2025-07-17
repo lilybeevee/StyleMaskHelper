@@ -116,7 +116,7 @@ public class ColorGradeMask : Mask {
                     FadeBuffers.RemoveRange(fadeBufferCount, FadeBuffers.Count - fadeBufferCount);
                 } else {
                     for (var i = FadeBuffers.Count; i < fadeBufferCount; i++)
-                        FadeBuffers.Add(VirtualContent.CreateRenderTarget(FadeBufferNamePrefix + i, 320, 180));
+                        FadeBuffers.Add(VirtualContent.CreateRenderTarget(FadeBufferNamePrefix + i, ZoomOutCompat.BufferWidth, ZoomOutCompat.BufferHeight));
                 }
 
                 if (fadeBufferCount > 0) {
@@ -153,7 +153,7 @@ public class ColorGradeMask : Mask {
                         // Put them together in the final buffer
                         var bufferIndex = fadeBufferIndexes[colorGrade];
 
-                        Engine.Graphics.GraphicsDevice.SetRenderTarget(FadeBuffers[bufferIndex]);
+                        Engine.Graphics.GraphicsDevice.SetRenderTarget(ZoomOutCompat.EnsureBufferDimensions(FadeBuffers[bufferIndex]));
                         Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
 
                         ColorGrade.Set(colorGrade.From, colorGrade.To, colorGrade.FromAmount);
