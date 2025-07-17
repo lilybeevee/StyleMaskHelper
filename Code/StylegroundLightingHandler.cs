@@ -42,7 +42,9 @@ public class StylegroundLightingHandler {
         cursor.Emit(OpCodes.Ldarg_0);
         cursor.Emit(OpCodes.Ldarg_1);
 
-        cursor.EmitDelegate<Func<Backdrop, bool, BackdropRenderer, Scene, bool>>((backdrop, visible, renderer, scene) => {
+        cursor.EmitDelegate(drawStylegroundLighting);
+
+        static bool drawStylegroundLighting(Backdrop backdrop, bool visible, BackdropRenderer renderer, Scene scene) {
             if (!visible)
                 return false;
 
@@ -78,6 +80,6 @@ public class StylegroundLightingHandler {
             Draw.SpriteBatch.End();
 
             return false;
-        });
+        }
     }
 }

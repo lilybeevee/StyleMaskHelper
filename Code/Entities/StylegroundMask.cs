@@ -1,4 +1,5 @@
 ﻿using Celeste.Mod.Entities;
+using Celeste.Mod.Helpers;
 using Celeste.Mod.StyleMaskHelper.Compat;
 using Celeste.Mod.StyleMaskHelper.Effects;
 using Microsoft.Xna.Framework;
@@ -506,36 +507,40 @@ public class StylegroundMaskRenderer : Renderer {
     private static void Level_Render(ILContext il) {
         ILCursor cursor = new ILCursor(il);
 
-        while (cursor.TryGotoNext(MoveType.After,
+        while (cursor.TryGotoNextBestFit(MoveType.After,
             instr => instr.MatchLdarg(0),
             instr => instr.MatchLdfld<Level>("Background"),
             instr => instr.MatchLdarg(0),
             instr => instr.MatchCallvirt<Renderer>("Render"))) {
             cursor.Emit(OpCodes.Ldarg_0);
-            cursor.EmitDelegate<Action<Level>>((level) => {
-                Instance?.RenderWith(level, false);
-            });
+            cursor.EmitDelegate(renderStylemasksBg);
         }
 
         cursor.Index = 0;
 
-        while (cursor.TryGotoNext(MoveType.Before,
+        while (cursor.TryGotoNextBestFit(MoveType.Before,
             instr => instr.MatchLdarg(0),
             instr => instr.MatchLdfld<Level>("Foreground"),
             instr => instr.MatchLdarg(0),
             instr => instr.MatchCallvirt<Renderer>("Render"))) {
             cursor.Emit(OpCodes.Ldarg_0);
-            cursor.EmitDelegate<Action<Level>>((level) => {
-                Instance?.RenderWith(level, true, behind: true);
-            });
+            cursor.EmitDelegate(renderStylemasksFgBehind);
+
 
             cursor.Index += 4;
 
             cursor.Emit(OpCodes.Ldarg_0);
-            cursor.EmitDelegate<Action<Level>>((level) => {
-                Instance?.RenderWith(level, true, behind: false, skipBuffers: true);
-            });
+            cursor.EmitDelegate(renderStylemasksFgAbove);
         }
+
+        static void renderStylemasksBg(Level level) =>
+            Instance?.RenderWith(level, false);
+
+        static void renderStylemasksFgBehind(Level level) =>
+            Instance?.RenderWith(level, true, behind: true);
+
+        static void renderStylemasksFgAbove(Level level) =>
+            Instance?.RenderWith(level, true, behind: false, skipBuffers: true);
     }
     #endregion
 }

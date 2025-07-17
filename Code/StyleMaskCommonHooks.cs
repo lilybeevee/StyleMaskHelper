@@ -1,4 +1,5 @@
-﻿using Celeste.Mod.StyleMaskHelper.Effects;
+﻿using Celeste.Mod.Helpers;
+using Celeste.Mod.StyleMaskHelper.Effects;
 using Celeste.Mod.StyleMaskHelper.Entities;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
@@ -24,9 +25,8 @@ public class StyleMaskCommonHooks {
             .GetMethod("Get", BindingFlags.Instance | BindingFlags.Public)
             .MakeGenericMethod(typeof(HeatWave));
 
-        int levelArg = -1;
-        if (!cursor.TryGotoNext(MoveType.After,
-            instr => instr.MatchLdarg(out levelArg),
+        if (!cursor.TryGotoNextBestFit(MoveType.After,
+            instr => instr.MatchLdarg1(), // can't use this match to dynamically find the index of the scene argument anymore since trygotonextbestfit is a bit silly, but since realistically it shouldn't change anyway this shouldn't break anything
             instr => instr.MatchIsinst<Level>(),
             instr => instr.MatchLdfld<Level>("Foreground"),
             instr => instr.MatchCallvirt(getHeatWaveMethod))) {
@@ -35,9 +35,11 @@ public class StyleMaskCommonHooks {
             return;
         }
 
-        cursor.Emit(OpCodes.Ldarg, levelArg);
+        cursor.Emit(OpCodes.Ldarg, 1);
         cursor.Emit(OpCodes.Isinst, typeof(Level));
-        cursor.EmitDelegate<Func<HeatWave, Level, HeatWave>>((heatWave, level) => {
+        cursor.EmitDelegate(renderHeatWaveOneModeDisplacement);
+
+        static HeatWave renderHeatWaveOneModeDisplacement(HeatWave heatWave, Level level) {
             HeatWave firstHeatWave = null;
 
             foreach (var backdrop in level.Foreground.Backdrops) {
@@ -52,9 +54,9 @@ public class StyleMaskCommonHooks {
             }
 
             return (heatWave is HeatWaveOneMode) ? firstHeatWave : heatWave;
-        });
+        }
 
-        cursor.Emit(OpCodes.Ldarg, levelArg);
+        cursor.Emit(OpCodes.Ldarg, 1);
         cursor.Emit(OpCodes.Isinst, typeof(Level));
         cursor.EmitDelegate(StylegroundMaskRenderer.RenderHeatWaveDisplacement);
     }

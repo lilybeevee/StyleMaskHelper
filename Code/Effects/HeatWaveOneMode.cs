@@ -86,8 +86,10 @@ public class HeatWaveOneMode : HeatWave {
 
         while (cursor.TryGotoNext(MoveType.After, instr => instr.MatchCallOrCallvirt<Level>("get_CoreMode"))) {
             cursor.Emit(OpCodes.Ldarg_0);
-            cursor.EmitDelegate<Func<Session.CoreModes, HeatWave, Session.CoreModes>>((coreMode, self) =>
-                self is HeatWaveOneMode heatWaveOneMode ? heatWaveOneMode.CoreMode : coreMode);
+            cursor.EmitDelegate(useHeatWaveOneModeCoreMode);
+
+            static Session.CoreModes useHeatWaveOneModeCoreMode(Session.CoreModes coreMode, HeatWave self) =>
+                self is HeatWaveOneMode heatWaveOneMode ? heatWaveOneMode.CoreMode : coreMode;
         }
     }
 }

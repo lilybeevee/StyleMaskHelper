@@ -9,6 +9,7 @@ using Mono.Cecil.Cil;
 using Celeste.Mod.Entities;
 using System.Drawing.Text;
 using Celeste.Mod.StyleMaskHelper.Compat;
+using Celeste.Mod.Helpers;
 
 namespace Celeste.Mod.StyleMaskHelper.Entities;
 
@@ -82,7 +83,9 @@ public class ColorGradeMask : Mask {
             instr => instr.MatchCallOrCallvirt<GraphicsDevice>("SetRenderTarget"))) {
 
             cursor.Emit(OpCodes.Ldarg_0);
-            cursor.EmitDelegate<Action<Level>>(level => {
+            cursor.EmitDelegate(prepareColorGradeMasks);
+
+            static void prepareColorGradeMasks(Level level) {
                 var fadeBufferIndexes = new Dictionary<ColorGradeKey, int>();
                 var fadeBufferCount = 0;
 
@@ -200,11 +203,12 @@ public class ColorGradeMask : Mask {
                 //
                 // steps could be reduced here if i had some celeste-accurate color grade shader code to
                 // combine with the mask shader code but i failed to properly recreate that
-            });
+            }
         }
 
         int matrixLocal = -1;
-        cursor.TryGotoNext(instr => instr.MatchLdcR4(6),
+        cursor.TryGotoNextBestFit(MoveType.Before,
+            instr => instr.MatchLdcR4(6),
             instr => instr.MatchCall<Matrix>("CreateScale"),
             instr => instr.MatchLdsfld<Engine>("ScreenMatrix"),
             instr => true,
@@ -221,7 +225,9 @@ public class ColorGradeMask : Mask {
 
             cursor.Emit(OpCodes.Ldarg_0);
             cursor.Emit(OpCodes.Ldloc_S, (byte)matrixLocal);
-            cursor.EmitDelegate<Action<Level, Matrix>>((level, matrix) => {
+            cursor.EmitDelegate(drawColorGradeMasks);
+
+            static void drawColorGradeMasks(Level level, Matrix matrix) {
                 var colorGradeMasks = level.Tracker.GetEntities<ColorGradeMask>();
                 if (colorGradeMasks.Count > 0) {
                     var currentFrom = GFX.ColorGrades.GetOrDefault(level.lastColorGrade, GFX.ColorGrades["none"]);
@@ -289,7 +295,7 @@ public class ColorGradeMask : Mask {
 
                     ColorGrade.Set(currentFrom, currentTo, currentValue);
                 }
-            });
+            }
         }
     }
 
