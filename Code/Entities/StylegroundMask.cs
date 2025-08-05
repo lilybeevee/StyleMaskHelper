@@ -309,16 +309,26 @@ public class StylegroundMaskRenderer : Renderer {
                .Intersects(new Rectangle((int)camera.X, (int)camera.Y, camera.Viewport.Width, camera.Viewport.Height));
     }
 
+    private HashSet<string> visibleTilesetTags = [];
+    private void UpdateVisibleTilesetTags(Level level) {
+        StylegroundMaskTilesetHandler.GetVisibleTags(level, visibleTilesetTags);
+    }
+
     public bool AnyMaskIsInView(Level level, string tag) {
         foreach (var mask in GetMasksWithTag(level, tag)) {
             if (IsEntityInView(level, mask))
                 return true;
         }
 
+        if (visibleTilesetTags.Contains(tag))
+            return true;
+
         return false;
     }
 
     public void RenderStylegroundsIntoBuffers(Level level, bool foreground) {
+        UpdateVisibleTilesetTags(level);
+
         foreach (var pair in GetBackdrops(foreground)) {
             string tag = pair.Key;
             var backdrops = pair.Value;

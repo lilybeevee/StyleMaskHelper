@@ -57,6 +57,7 @@ public class StyleMaskModule : EverestModule {
     public override void Load() {
         StyleMaskCommonHooks.Load();
         StylegroundLightingHandler.Load();
+        StylegroundMaskTilesetHandler.Load();
 
         BloomMask.Load();
         StylegroundMaskRenderer.Load();
@@ -71,6 +72,7 @@ public class StyleMaskModule : EverestModule {
     public override void Unload() {
         StyleMaskCommonHooks.Unload();
         StylegroundLightingHandler.Unload();
+        StylegroundMaskTilesetHandler.Unload();
 
         BloomMask.Unload();
         StylegroundMaskRenderer.Unload();
