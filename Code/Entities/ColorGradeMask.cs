@@ -225,26 +225,27 @@ public class ColorGradeMask : Mask {
 
             cursor.Emit(OpCodes.Ldarg_0);
             cursor.Emit(OpCodes.Ldloc_S, (byte)matrixLocal);
+            cursor.Emit(OpCodes.Ldloc_S, (byte)9); // padding offset
             cursor.Emit(OpCodes.Ldloc_S, (byte)5); // focus offset
             cursor.Emit(OpCodes.Ldloc_S, (byte)8); // scale
             cursor.EmitDelegate(drawColorGradeMasks);
 
-            static void drawColorGradeMasks(Level level, Matrix matrix, Vector2 focusOffset, float scale) {
+            static void drawColorGradeMasks(Level level, Matrix matrix, Vector2 paddingOffset, Vector2 focusOffset, float scale) {
                 var colorGradeMasks = level.Tracker.GetEntities<ColorGradeMask>();
                 if (colorGradeMasks.Count > 0) {
                     var currentFrom = GFX.ColorGrades.GetOrDefault(level.lastColorGrade, GFX.ColorGrades["none"]);
                     var currentTo = GFX.ColorGrades.GetOrDefault(level.Session.ColorGrade, GFX.ColorGrades["none"]);
                     var currentValue = ColorGrade.Percent;
 
-                    var paddingOffset = new Vector2(level.ScreenPadding, level.ScreenPadding * 0.5625f);
-
-                    // remove the built-in mirror mode offset from the focus offset
+                    // remove the built-in mirror mode offset from the focus offset since this gets taken care of as part of the zoom matrix later
                     if (SaveData.Instance.Assists.MirrorMode) {
                         focusOffset.X = 320f - focusOffset.X;
                     }
 
-                    if (StyleMaskModule.ExtendedVariantsLoaded) {
-                        ExtendedVariantCompat.ApplyUpsideDownEffect(ref paddingOffset, ref focusOffset);
+                    // also undo the built-in extended variant upside down offsets (same deal as mirror mode)
+                    if (StyleMaskModule.ExtendedVariantsLoaded && ExtendedVariantCompat.UpsideDown) {
+                        paddingOffset.Y = -paddingOffset.Y;
+                        focusOffset.Y = 180f - focusOffset.Y;
                     }
 
                     var zoomMatrix = Matrix.CreateTranslation(new Vector3(-focusOffset, 0f))
