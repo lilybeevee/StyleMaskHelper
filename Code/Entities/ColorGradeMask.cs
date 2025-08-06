@@ -225,26 +225,23 @@ public class ColorGradeMask : Mask {
 
             cursor.Emit(OpCodes.Ldarg_0);
             cursor.Emit(OpCodes.Ldloc_S, (byte)matrixLocal);
+            cursor.Emit(OpCodes.Ldloc_S, (byte)5); // focus offset
+            cursor.Emit(OpCodes.Ldloc_S, (byte)8); // scale
             cursor.EmitDelegate(drawColorGradeMasks);
 
-            static void drawColorGradeMasks(Level level, Matrix matrix) {
+            static void drawColorGradeMasks(Level level, Matrix matrix, Vector2 focusOffset, float scale) {
                 var colorGradeMasks = level.Tracker.GetEntities<ColorGradeMask>();
                 if (colorGradeMasks.Count > 0) {
                     var currentFrom = GFX.ColorGrades.GetOrDefault(level.lastColorGrade, GFX.ColorGrades["none"]);
                     var currentTo = GFX.ColorGrades.GetOrDefault(level.Session.ColorGrade, GFX.ColorGrades["none"]);
                     var currentValue = ColorGrade.Percent;
 
-                    var zoom = level.Zoom;
-
-                    if (StyleMaskModule.ExtendedVariantsLoaded) {
-                        zoom *= ExtendedVariantCompat.ZoomLevel;
-                    }
-
-                    var screenSize = new Vector2(320f, 180f);
-                    var scaledScreen = screenSize / level.ZoomTarget;
-                    var focusOffset = (level.ZoomTarget != 1f) ? ((level.ZoomFocusPoint - scaledScreen / 2f) / (screenSize - scaledScreen) * screenSize) : Vector2.Zero;
                     var paddingOffset = new Vector2(level.ScreenPadding, level.ScreenPadding * 0.5625f);
-                    var scale = zoom * ((320f - level.ScreenPadding * 2f) / 320f);
+
+                    // remove the built-in mirror mode offset from the focus offset
+                    if (SaveData.Instance.Assists.MirrorMode) {
+                        focusOffset.X = 320f - focusOffset.X;
+                    }
 
                     if (StyleMaskModule.ExtendedVariantsLoaded) {
                         ExtendedVariantCompat.ApplyUpsideDownEffect(ref paddingOffset, ref focusOffset);
