@@ -15,7 +15,7 @@ namespace Celeste.Mod.StyleMaskHelper;
 // https://github.com/SSM240/SSMHelper/blob/master/Source/StarjumpTilesetHelper.cs
 
 public static class StylegroundMaskTilesetHandler {
-    private const string LogID = "StyleMaskHelper/StylegroundMaskTilesetHandler"; 
+    private const string LogID = "StyleMaskHelper/StylegroundMaskTilesetHandler";
 
     private static Dictionary<string, string> TilesetToStyleMaskTag = [];
     internal static void GetVisibleTags(Level level, HashSet<string> visibleTags) {
@@ -67,11 +67,12 @@ public static class StylegroundMaskTilesetHandler {
         orig(self, session, startPosition);
     }
 
+    private const string AttributeName = "styleMaskHelper_maskTag";
     private static void On_Autotiler_ReadInto(On.Celeste.Autotiler.orig_ReadInto orig, Autotiler self, object data, Tileset tileset, XmlElement xml) {
         orig(self, data, tileset, xml);
 
-        if (xml.HasAttr("styleMaskHelper_stylegroundTag"))
-            TilesetToStyleMaskTag["tilesets/" + xml.Attr("path")] = xml.Attr("styleMaskHelper_stylegroundTag");
+        if (xml.HasAttr(AttributeName))
+            TilesetToStyleMaskTag["tilesets/" + xml.Attr("path")] = xml.Attr(AttributeName);
     }
 
     // feels so evil to hook this
@@ -79,7 +80,7 @@ public static class StylegroundMaskTilesetHandler {
         var cursor = new ILCursor(il);
 
         if (!cursor.TryGotoNext(MoveType.Before, i => i.MatchCallOrCallvirt<SpriteBatch>(nameof(SpriteBatch.Draw)))) {
-            Logger.Error(LogID, "Failed to find SpriteBatch.Draw call in tileset rendering!");
+            Logger.Error(LogID, "Failed to find SpriteBatch.Draw call in TileGrid.RenderAt!");
             return;
         }
 
@@ -89,9 +90,12 @@ public static class StylegroundMaskTilesetHandler {
         cursor.Emit(OpCodes.Ldloc_S, (byte)4); // color
         cursor.Emit(OpCodes.Ldloc_S, (byte)8); // mtexture
         cursor.EmitLdarg0(); // tilegrid (for clip camera)
-        cursor.EmitDelegate(drawStylemasks);
+        cursor.EmitDelegate(drawTilesetStylegroundMask);
 
-        static void drawStylemasks(Vector2 position, int tileWidth, int tileHeight, Color color, MTexture mTexture, TileGrid tileGrid) {
+        static void drawTilesetStylegroundMask(Vector2 position, int tileWidth, int tileHeight, Color color, MTexture mTexture, TileGrid tileGrid) {
+            if (TilesetToStyleMaskTag.Count == 0)
+                return;
+
             var tilesetPath = mTexture.Parent.AtlasPath;
             if (!TilesetToStyleMaskTag.TryGetValue(tilesetPath, out var styleMaskTag))
                 return;

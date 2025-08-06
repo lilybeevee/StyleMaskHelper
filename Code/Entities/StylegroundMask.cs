@@ -221,7 +221,6 @@ public class StylegroundMaskRenderer : Renderer {
 
     public bool Foreground;
     public bool Behind;
-    public bool SkipBuffers;
 
     // tag -> backdrops
     public Dictionary<string, List<Backdrop>> FGBackdrops = new();
@@ -250,12 +249,12 @@ public class StylegroundMaskRenderer : Renderer {
     public static VirtualRenderTarget GetBuffer(string tag, bool foreground) {
         var buffers = GetBuffers(foreground);
 
-        if (!buffers.ContainsKey(tag)) {
+        if (!buffers.TryGetValue(tag, out var buffer)) {
             var namePrefix = foreground ? MaskBufferFgNamePrefix : MaskBufferBgNamePrefix;
-            buffers.Add(tag, VirtualContent.CreateRenderTarget(namePrefix + tag, ZoomOutCompat.BufferWidth, ZoomOutCompat.BufferHeight));
+            buffers[tag] = buffer = VirtualContent.CreateRenderTarget(namePrefix + tag, ZoomOutCompat.BufferWidth, ZoomOutCompat.BufferHeight);
         }
 
-        return ZoomOutCompat.EnsureBufferDimensions(buffers[tag]);
+        return ZoomOutCompat.EnsureBufferDimensions(buffer);
     }
 
     private static void UnloadBuffers() {
@@ -309,10 +308,9 @@ public class StylegroundMaskRenderer : Renderer {
                .Intersects(new Rectangle((int)camera.X, (int)camera.Y, camera.Viewport.Width, camera.Viewport.Height));
     }
 
-    private HashSet<string> visibleTilesetTags = [];
-    private void UpdateVisibleTilesetTags(Level level) {
-        StylegroundMaskTilesetHandler.GetVisibleTags(level, visibleTilesetTags);
-    }
+    private HashSet<string> visibleTilesetMasks = [];
+    private void UpdateVisibleTilesetMasks(Level level) =>
+        StylegroundMaskTilesetHandler.GetVisibleTags(level, visibleTilesetMasks);
 
     public bool AnyMaskIsInView(Level level, string tag) {
         foreach (var mask in GetMasksWithTag(level, tag)) {
@@ -320,15 +318,13 @@ public class StylegroundMaskRenderer : Renderer {
                 return true;
         }
 
-        if (visibleTilesetTags.Contains(tag))
+        if (visibleTilesetMasks.Contains(tag))
             return true;
 
         return false;
     }
 
     public void RenderStylegroundsIntoBuffers(Level level, bool foreground) {
-        UpdateVisibleTilesetTags(level);
-
         foreach (var pair in GetBackdrops(foreground)) {
             string tag = pair.Key;
             var backdrops = pair.Value;
@@ -349,10 +345,9 @@ public class StylegroundMaskRenderer : Renderer {
         }
     }
 
-    public void RenderWith(Scene scene, bool fg, bool behind = false, bool skipBuffers = false) {
+    public void RenderWith(Scene scene, bool fg, bool behind = false) {
         Foreground = fg;
         Behind = behind;
-        SkipBuffers = skipBuffers;
         Render(scene);
     }
 
@@ -360,14 +355,15 @@ public class StylegroundMaskRenderer : Renderer {
         return !mask.EntityRenderer && (!Foreground || mask.BehindForeground == Behind) && mask.IsVisible();
     }
 
+    public override void BeforeRender(Scene scene) {
+        var level = scene as Level;
+        UpdateVisibleTilesetMasks(level);
+        RenderStylegroundsIntoBuffers(level, foreground: false);
+        RenderStylegroundsIntoBuffers(level, foreground: true);
+    }
+
     public override void Render(Scene scene) {
         var level = scene as Level;
-
-        if (!SkipBuffers) {
-            var lastTargets = Engine.Graphics.GraphicsDevice.GetRenderTargets();
-            RenderStylegroundsIntoBuffers(level, Foreground);
-            Engine.Graphics.GraphicsDevice.SetRenderTargets(lastTargets);
-        }
 
         var bufferDict = GetBuffers(Foreground);
         if (bufferDict.Count == 0)
@@ -385,7 +381,7 @@ public class StylegroundMaskRenderer : Renderer {
 
         if (fadeMasks.Any()) {
             var targets = Engine.Graphics.GraphicsDevice.GetRenderTargets();
-            
+
             foreach (var bufferPair in bufferDict) {
                 var tag = bufferPair.Key;
                 var buffer = bufferPair.Value;
@@ -550,7 +546,7 @@ public class StylegroundMaskRenderer : Renderer {
             Instance?.RenderWith(level, true, behind: true);
 
         static void renderStylemasksFgAbove(Level level) =>
-            Instance?.RenderWith(level, true, behind: false, skipBuffers: true);
+            Instance?.RenderWith(level, true, behind: false);
     }
     #endregion
 }
