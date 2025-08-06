@@ -31,21 +31,13 @@ public static class StylegroundMaskTilesetHandler {
             tilegrid.ClipCamera ??= level.Camera;
 
             var clippedRenderTiles = tilegrid.GetClippedRenderTiles();
-            int tileWidth = tilegrid.TileWidth;
-            int tileHeight = tilegrid.TileHeight;
-            var position = tilegrid.Entity.Position + tilegrid.Position;
-            var tilePosition = new Vector2(position.X + clippedRenderTiles.Left * tileWidth, position.Y + clippedRenderTiles.Top * tileHeight);
-            for (int i = clippedRenderTiles.Left; i < clippedRenderTiles.Right; i++) {
-                for (int j = clippedRenderTiles.Top; j < clippedRenderTiles.Bottom; j++) {
-                    var mTexture = tilegrid.Tiles[i, j];
-                    if (mTexture is not null && TilesetToStyleMaskTag.TryGetValue(mTexture.Parent.AtlasPath, out var styleMaskTag))
+            for (int x = clippedRenderTiles.Left; x < clippedRenderTiles.Right; x++) {
+                for (int y = clippedRenderTiles.Top; y < clippedRenderTiles.Bottom; y++) {
+                    var mTexture = tilegrid.Tiles[x, y];
+                    if (mTexture is not null && TilesetToStyleMaskTag.TryGetValue(mTexture.Parent.AtlasPath, out var styleMaskTag)) {
                         visibleTags.Add(styleMaskTag);
-
-                    tilePosition.Y += tileHeight;
+                    }
                 }
-
-                tilePosition.X += tileWidth;
-                tilePosition.Y += clippedRenderTiles.Top * tileHeight;
             }
         }
     }
