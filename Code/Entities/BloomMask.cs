@@ -54,8 +54,8 @@ public class BloomMask : Mask {
         orig();
         BloomBuffer?.Dispose();
         FadeBuffer?.Dispose();
-        BloomBuffer = VirtualContent.CreateRenderTarget(BufferName, 320, 180);
-        FadeBuffer = VirtualContent.CreateRenderTarget(FadeBufferName, 320, 180);
+        BloomBuffer = VirtualContent.CreateRenderTarget(BufferName, ZoomOutCompat.BufferWidth, ZoomOutCompat.BufferHeight);
+        FadeBuffer = VirtualContent.CreateRenderTarget(FadeBufferName, ZoomOutCompat.BufferWidth, ZoomOutCompat.BufferHeight);
     }
 
     private static void BloomRenderer_Apply(On.Celeste.BloomRenderer.orig_Apply orig, BloomRenderer self, VirtualRenderTarget target, Scene scene) {
@@ -88,11 +88,13 @@ public class BloomMask : Mask {
                 cursor.Emit(OpCodes.Ldarg_1);
                 cursor.Emit(OpCodes.Ldarg_2);
                 cursor.Emit(OpCodes.Ldloc_S, (byte)textureLoc);
-                cursor.EmitDelegate<Action<BloomRenderer, VirtualRenderTarget, Scene, Texture2D>>((self, target, scene, texture) => {
+                cursor.EmitDelegate(drawBloomMasks);
+
+                static void drawBloomMasks(BloomRenderer self, VirtualRenderTarget target, Scene scene, Texture2D texture) {
                     var selfData = DynamicData.For(self);
                     var sliceRects = new List<Rectangle>();
                     var level = scene as Level;
-                    
+
                     var masks = scene.Tracker.GetEntities<BloomMask>().OfType<BloomMask>();
 
                     if (masks.Any() && !(StyleMaskModule.CelesteTASLoaded && CelesteTASCompat.SimplifiedBloom)) {
@@ -106,7 +108,7 @@ public class BloomMask : Mask {
 
                         // Bloom Buffer
 
-                        Engine.Instance.GraphicsDevice.SetRenderTarget(BloomBuffer);
+                        Engine.Instance.GraphicsDevice.SetRenderTarget(ZoomOutCompat.EnsureBufferDimensions(BloomBuffer));
                         Engine.Instance.GraphicsDevice.Clear(Color.Transparent);
 
                         Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, level.Camera.Matrix);
@@ -143,7 +145,7 @@ public class BloomMask : Mask {
                         // Fade Buffer (Strength)
 
                         if (fadeMasks.Length > 0) {
-                            Engine.Instance.GraphicsDevice.SetRenderTarget(FadeBuffer);
+                            Engine.Instance.GraphicsDevice.SetRenderTarget(ZoomOutCompat.EnsureBufferDimensions(FadeBuffer));
                             Engine.Instance.GraphicsDevice.Clear(Color.Transparent);
 
                             Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, StyleMaskModule.CustomFadeRange, level.Camera.Matrix);
@@ -159,7 +161,7 @@ public class BloomMask : Mask {
                             }
                             Draw.SpriteBatch.End();
                         }
-                        
+
                         // Target Buffer
 
                         Engine.Instance.GraphicsDevice.SetRenderTarget(target);
@@ -200,7 +202,7 @@ public class BloomMask : Mask {
                     }
 
                     selfData.Set(DynDataMaskRectsName, sliceRects);
-                });
+                }
             }
         }
 
@@ -211,7 +213,9 @@ public class BloomMask : Mask {
 
             cursor.Emit(OpCodes.Ldarg_0);
             cursor.Emit(OpCodes.Ldarg_2);
-            cursor.EmitDelegate<Action<BloomRenderer, Scene>>((self, scene) => {
+            cursor.EmitDelegate(cutOutBloomMaskRects);
+
+            static void cutOutBloomMaskRects(BloomRenderer self, Scene scene) {
                 var selfData = DynamicData.For(self);
                 var slices = selfData.Get<List<Rectangle>>(DynDataMaskRectsName);
                 if (slices.Count > 0) {
@@ -223,7 +227,7 @@ public class BloomMask : Mask {
                     Draw.SpriteBatch.End();
                 }
                 self.Strength = selfData.Get<float>(DynDataLastStrengthName);
-            });
+            }
         }
     }
 }

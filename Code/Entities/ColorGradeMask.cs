@@ -9,6 +9,7 @@ using Mono.Cecil.Cil;
 using Celeste.Mod.Entities;
 using System.Drawing.Text;
 using Celeste.Mod.StyleMaskHelper.Compat;
+using Celeste.Mod.Helpers;
 
 namespace Celeste.Mod.StyleMaskHelper.Entities;
 
@@ -82,7 +83,9 @@ public class ColorGradeMask : Mask {
             instr => instr.MatchCallOrCallvirt<GraphicsDevice>("SetRenderTarget"))) {
 
             cursor.Emit(OpCodes.Ldarg_0);
-            cursor.EmitDelegate<Action<Level>>(level => {
+            cursor.EmitDelegate(prepareColorGradeMasks);
+
+            static void prepareColorGradeMasks(Level level) {
                 var fadeBufferIndexes = new Dictionary<ColorGradeKey, int>();
                 var fadeBufferCount = 0;
 
@@ -113,7 +116,7 @@ public class ColorGradeMask : Mask {
                     FadeBuffers.RemoveRange(fadeBufferCount, FadeBuffers.Count - fadeBufferCount);
                 } else {
                     for (var i = FadeBuffers.Count; i < fadeBufferCount; i++)
-                        FadeBuffers.Add(VirtualContent.CreateRenderTarget(FadeBufferNamePrefix + i, 320, 180));
+                        FadeBuffers.Add(VirtualContent.CreateRenderTarget(FadeBufferNamePrefix + i, ZoomOutCompat.BufferWidth, ZoomOutCompat.BufferHeight));
                 }
 
                 if (fadeBufferCount > 0) {
@@ -150,7 +153,7 @@ public class ColorGradeMask : Mask {
                         // Put them together in the final buffer
                         var bufferIndex = fadeBufferIndexes[colorGrade];
 
-                        Engine.Graphics.GraphicsDevice.SetRenderTarget(FadeBuffers[bufferIndex]);
+                        Engine.Graphics.GraphicsDevice.SetRenderTarget(ZoomOutCompat.EnsureBufferDimensions(FadeBuffers[bufferIndex]));
                         Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
 
                         ColorGrade.Set(colorGrade.From, colorGrade.To, colorGrade.FromAmount);
@@ -200,11 +203,12 @@ public class ColorGradeMask : Mask {
                 //
                 // steps could be reduced here if i had some celeste-accurate color grade shader code to
                 // combine with the mask shader code but i failed to properly recreate that
-            });
+            }
         }
 
         int matrixLocal = -1;
-        cursor.TryGotoNext(instr => instr.MatchLdcR4(6),
+        cursor.TryGotoNextBestFit(MoveType.Before,
+            instr => instr.MatchLdcR4(6),
             instr => instr.MatchCall<Matrix>("CreateScale"),
             instr => instr.MatchLdsfld<Engine>("ScreenMatrix"),
             instr => true,
@@ -221,27 +225,27 @@ public class ColorGradeMask : Mask {
 
             cursor.Emit(OpCodes.Ldarg_0);
             cursor.Emit(OpCodes.Ldloc_S, (byte)matrixLocal);
-            cursor.EmitDelegate<Action<Level, Matrix>>((level, matrix) => {
+            cursor.Emit(OpCodes.Ldloc_S, (byte)9); // padding offset
+            cursor.Emit(OpCodes.Ldloc_S, (byte)5); // focus offset
+            cursor.Emit(OpCodes.Ldloc_S, (byte)8); // scale
+            cursor.EmitDelegate(drawColorGradeMasks);
+
+            static void drawColorGradeMasks(Level level, Matrix matrix, Vector2 paddingOffset, Vector2 focusOffset, float scale) {
                 var colorGradeMasks = level.Tracker.GetEntities<ColorGradeMask>();
                 if (colorGradeMasks.Count > 0) {
                     var currentFrom = GFX.ColorGrades.GetOrDefault(level.lastColorGrade, GFX.ColorGrades["none"]);
                     var currentTo = GFX.ColorGrades.GetOrDefault(level.Session.ColorGrade, GFX.ColorGrades["none"]);
                     var currentValue = ColorGrade.Percent;
 
-                    var zoom = level.Zoom;
-
-                    if (StyleMaskModule.ExtendedVariantsLoaded) {
-                        zoom *= ExtendedVariantCompat.ZoomLevel;
+                    // remove the built-in mirror mode offset from the focus offset since this gets taken care of as part of the zoom matrix later
+                    if (SaveData.Instance.Assists.MirrorMode) {
+                        focusOffset.X = 320f - focusOffset.X;
                     }
 
-                    var screenSize = new Vector2(320f, 180f);
-                    var scaledScreen = screenSize / level.ZoomTarget;
-                    var focusOffset = (level.ZoomTarget != 1f) ? ((level.ZoomFocusPoint - scaledScreen / 2f) / (screenSize - scaledScreen) * screenSize) : Vector2.Zero;
-                    var paddingOffset = new Vector2(level.ScreenPadding, level.ScreenPadding * 0.5625f);
-                    var scale = zoom * ((320f - level.ScreenPadding * 2f) / 320f);
-
-                    if (StyleMaskModule.ExtendedVariantsLoaded) {
-                        ExtendedVariantCompat.ApplyUpsideDownEffect(ref paddingOffset, ref focusOffset);
+                    // also undo the built-in extended variant upside down offsets (same deal as mirror mode)
+                    if (StyleMaskModule.ExtendedVariantsLoaded && ExtendedVariantCompat.UpsideDown) {
+                        paddingOffset.Y = -paddingOffset.Y;
+                        focusOffset.Y = 180f - focusOffset.Y;
                     }
 
                     var zoomMatrix = Matrix.CreateTranslation(new Vector3(-focusOffset, 0f))
@@ -289,7 +293,7 @@ public class ColorGradeMask : Mask {
 
                     ColorGrade.Set(currentFrom, currentTo, currentValue);
                 }
-            });
+            }
         }
     }
 

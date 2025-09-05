@@ -11,6 +11,11 @@ This mod contains all of these masks:
 
 Style Mask Helper also features the following styleground-related features:
 
+- Styleground Mask tilesets, by adding a `styleMaskHelper_maskTag` attribute to your tileset xml definition set to the same as what you'd put in the "Tag" field of a styleground mask.
+
+  This works by rendering the stylegrounds *below each tile*, *as part of the tileset*, which means that:
+    1. This works best when used with a tileset that has *straight edges* to prevent the stylegrounds appearing to leak out, and *transparency wherever they should be visible*.
+    2. The stylegrounds will render at the same depth as the tileset, and as a result are also affected by lighting.
 - Styleground lighting, by simply adding the `renderlighting` tag to your styleground
 - Single-mode Heat Wave styleground effect, to use a hot or cold heatwave regardless of core mode
 

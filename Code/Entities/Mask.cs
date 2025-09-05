@@ -70,7 +70,8 @@ public class Mask : Entity {
     }
 
     public override void Render() {
-        var cameraCenter = SceneAs<Level>().Camera.Position + new Vector2(160f, 90f);
+        var camera = Level.Camera;
+        var cameraCenter = camera.Position + new Vector2(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f);
         if (ScrollX != 0f || ScrollY != 0f) {
             var baseCenter = startPosition + new Vector2(Width / 2f, Height / 2f);
             Center = (baseCenter + (baseCenter - cameraCenter) * new Vector2(ScrollX, ScrollY)).Round();
@@ -89,7 +90,7 @@ public class Mask : Entity {
     }
 
     public Rectangle GetVisibleRect()
-        => Rectangle.Intersect(new Rectangle(0, 0, 320, 180), new Rectangle((int)(X - Level.Camera.X), (int)(Y - Level.Camera.Y), (int)Width, (int)Height));
+        => Rectangle.Intersect(new Rectangle(0, 0, Level.Camera.Viewport.Width, Level.Camera.Viewport.Height), new Rectangle((int)(X - Level.Camera.X), (int)(Y - Level.Camera.Y), (int)Width, (int)Height));
 
     public Vector2 GetDrawPos()
         => new Vector2(Math.Max(X, Level.Camera.X), Math.Max(Y, Level.Camera.Y));
