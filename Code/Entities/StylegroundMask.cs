@@ -222,6 +222,12 @@ public class StylegroundMaskRenderer : Renderer {
     public bool Foreground;
     public bool Behind;
 
+    // aon helper fg styleground bloom controller compat
+    private bool? aonHelperCompat_applyBloom;
+    private static string aonHelperCompat_GetFgStylegroundBloomTag(Level level) => aonHelperCompat.TaggedFgStylegroundBloomRenderCompat.GetCurrentBloomTag?.Invoke(level);
+    public static void aonHelperCompat_RenderBefore(Level level, bool applyBloom) => Instance?.RenderWith(level, true, behind: true, applyBloom);
+    public static void aonHelperCompat_RenderAfter(Level level, bool applyBloom) => Instance?.RenderWith(level, true, behind: false, applyBloom);
+
     // tag -> backdrops
     public Dictionary<string, List<Backdrop>> FGBackdrops = new();
     public Dictionary<string, List<Backdrop>> BGBackdrops = new();
@@ -332,7 +338,13 @@ public class StylegroundMaskRenderer : Renderer {
             if (AnyMaskIsInView(level, tag)) {
                 // since masked stylegrounds are not in the level's styleground renderers at all,
                 // we need to go through the whole update-render cycle here
-                DummyBackdropRenderer.Backdrops = backdrops;
+
+                string aonHelperCompat_bloomTag = aonHelperCompat_GetFgStylegroundBloomTag(level);
+                List<Backdrop> toRender = !StyleMaskModule.aonHelperLoaded || aonHelperCompat_applyBloom == null || aonHelperCompat_bloomTag == null
+                    ? backdrops
+                    : backdrops.Where(backdrop => backdrop.Tags.Contains(aonHelperCompat_bloomTag) == aonHelperCompat_applyBloom).ToList();
+
+                DummyBackdropRenderer.Backdrops = toRender;
                 if (!level.Paused)
                     DummyBackdropRenderer.Update(level);
                 DummyBackdropRenderer.BeforeRender(level);
@@ -345,10 +357,12 @@ public class StylegroundMaskRenderer : Renderer {
         }
     }
 
-    public void RenderWith(Scene scene, bool fg, bool behind = false) {
+    public void RenderWith(Scene scene, bool fg, bool behind = false, bool? aonHelperCompat_applyBloom = null) {
         Foreground = fg;
         Behind = behind;
+        this.aonHelperCompat_applyBloom = aonHelperCompat_applyBloom;
         Render(scene);
+        this.aonHelperCompat_applyBloom = null;
     }
 
     private bool ShouldRenderMask(StylegroundMask mask) {
@@ -358,12 +372,20 @@ public class StylegroundMaskRenderer : Renderer {
     public override void BeforeRender(Scene scene) {
         var level = scene as Level;
         UpdateVisibleTilesetMasks(level);
+
         RenderStylegroundsIntoBuffers(level, foreground: false);
-        RenderStylegroundsIntoBuffers(level, foreground: true);
+        if (!StyleMaskModule.aonHelperLoaded || aonHelperCompat_GetFgStylegroundBloomTag(level) == null)
+            RenderStylegroundsIntoBuffers(level, foreground: true);
     }
 
     public override void Render(Scene scene) {
         var level = scene as Level;
+
+        if (StyleMaskModule.aonHelperLoaded && aonHelperCompat_applyBloom != null && aonHelperCompat_GetFgStylegroundBloomTag(level) != null && Foreground && Behind) {
+            var lastTargets = Engine.Graphics.GraphicsDevice.GetRenderTargets();
+            RenderStylegroundsIntoBuffers(level, foreground: true);
+            Engine.Graphics.GraphicsDevice.SetRenderTargets(lastTargets);
+        }
 
         var bufferDict = GetBuffers(Foreground);
         if (bufferDict.Count == 0)
@@ -372,8 +394,6 @@ public class StylegroundMaskRenderer : Renderer {
         // fixes bug where custom fade masks would be rendered white if simplified graphics is enabled with CelesteTAS
         if (StyleMaskModule.CelesteTASLoaded && CelesteTASCompat.SimplifiedBackdrop)
             return;
-
-        var backdrops = GetBackdrops(Foreground);
 
         var masks = scene.Tracker.GetEntities<StylegroundMask>().Cast<StylegroundMask>().Where(ShouldRenderMask);
         var fadeMasks = masks.Where(mask => mask.Fade == Mask.FadeType.Custom);

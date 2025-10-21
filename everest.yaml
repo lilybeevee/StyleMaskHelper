@@ -13,3 +13,5 @@
       Version: 3.21.0
     - Name: ExtendedVariantMode
       Version: 0.28.1
+    - Name: aonHelper
+      Version: 0.7.2

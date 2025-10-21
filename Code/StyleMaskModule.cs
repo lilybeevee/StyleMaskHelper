@@ -13,6 +13,7 @@ public class StyleMaskModule : EverestModule {
     public static bool CelesteTASLoaded { get; private set; }
     public static bool SpeedrunToolLoaded { get; private set; }
     public static bool ExtendedVariantsLoaded { get; private set; }
+    public static bool aonHelperLoaded { get; private set; }
 
     public static Effect MaskEffect { get; private set; }
     public static Effect StrengthMask { get; private set; }
@@ -37,9 +38,16 @@ public class StyleMaskModule : EverestModule {
             Name = "ExtendedVariantMode",
             Version = new Version(0, 28, 1)
         });
+        aonHelperLoaded = Everest.Loader.DependencyLoaded(new EverestModuleMetadata {
+            Name = "aonHelper",
+            Version = new Version(0, 7, 2)
+        });
 
         if (SpeedrunToolLoaded)
             SpeedrunToolCompat.Initialize();
+
+        if (aonHelperLoaded)
+            aonHelperCompat.Initialize();
     }
 
     public override void LoadContent(bool firstLoad) {
@@ -70,6 +78,9 @@ public class StyleMaskModule : EverestModule {
     }
 
     public override void Unload() {
+        if (aonHelperLoaded)
+            aonHelperCompat.Uninitialize();
+
         StyleMaskCommonHooks.Unload();
         StylegroundLightingHandler.Unload();
         StylegroundMaskTilesetHandler.Unload();
