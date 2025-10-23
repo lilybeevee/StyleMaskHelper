@@ -223,10 +223,21 @@ public class StylegroundMaskRenderer : Renderer {
     public bool Behind;
 
     // aon helper fg styleground bloom controller compat
+
+    /// <summary>
+    /// when rendering through aon helper's fg styleground bloom controller modinterop, whether to render fg stylegrounds that should be affected by bloom or ones that shouldn't.<br/>
+    /// will be null otherwise.
+    /// </summary>
     private bool? aonHelperCompat_applyBloom;
-    private static string aonHelperCompat_GetFgStylegroundBloomTag(Level level) => aonHelperCompat.TaggedFgStylegroundBloomRenderCompat.GetCurrentBloomTag?.Invoke(level);
-    public static void aonHelperCompat_RenderBefore(Level level, bool applyBloom) => Instance?.RenderWith(level, true, behind: true, applyBloom);
-    public static void aonHelperCompat_RenderAfter(Level level, bool applyBloom) => Instance?.RenderWith(level, true, behind: false, applyBloom);
+
+    private void aonHelperCompat_RenderFgWith(Scene scene, bool behind, bool applyBloom) {
+        aonHelperCompat_applyBloom = applyBloom;
+        RenderWith(scene, fg: true, behind: behind);
+        aonHelperCompat_applyBloom = null;
+    }
+
+    public static void aonHelperCompat_BeforeRender(Level level, bool applyBloom) => Instance?.aonHelperCompat_RenderFgWith(level, true, applyBloom);
+    public static void aonHelperCompat_AfterRender(Level level, bool applyBloom) => Instance?.aonHelperCompat_RenderFgWith(level, false, applyBloom);
 
     // tag -> backdrops
     public Dictionary<string, List<Backdrop>> FGBackdrops = new();
@@ -339,10 +350,10 @@ public class StylegroundMaskRenderer : Renderer {
                 // since masked stylegrounds are not in the level's styleground renderers at all,
                 // we need to go through the whole update-render cycle here
 
-                string aonHelperCompat_bloomTag = aonHelperCompat_GetFgStylegroundBloomTag(level);
-                List<Backdrop> toRender = !StyleMaskModule.aonHelperLoaded || aonHelperCompat_applyBloom == null || aonHelperCompat_bloomTag == null
-                    ? backdrops
-                    : backdrops.Where(backdrop => backdrop.Tags.Contains(aonHelperCompat_bloomTag) == aonHelperCompat_applyBloom).ToList();
+                // if rendering through aon helper's fg styleground bloom controller modinterop, filter fg stylegrounds based on bloom tag
+                List<Backdrop> toRender = StyleMaskModule.aonHelperLoaded && aonHelperCompat_applyBloom != null && aonHelperCompat.GetCurrentFgStylegroundBloomTag(level) is { } aonHelperCompat_bloomTag && foreground
+                    ? backdrops.Where(backdrop => backdrop.Tags.Contains(aonHelperCompat_bloomTag) == aonHelperCompat_applyBloom).ToList()
+                    : backdrops;
 
                 DummyBackdropRenderer.Backdrops = toRender;
                 if (!level.Paused)
@@ -357,12 +368,10 @@ public class StylegroundMaskRenderer : Renderer {
         }
     }
 
-    public void RenderWith(Scene scene, bool fg, bool behind = false, bool? aonHelperCompat_applyBloom = null) {
+    public void RenderWith(Scene scene, bool fg, bool behind = false) {
         Foreground = fg;
         Behind = behind;
-        this.aonHelperCompat_applyBloom = aonHelperCompat_applyBloom;
         Render(scene);
-        this.aonHelperCompat_applyBloom = null;
     }
 
     private bool ShouldRenderMask(StylegroundMask mask) {
@@ -374,14 +383,19 @@ public class StylegroundMaskRenderer : Renderer {
         UpdateVisibleTilesetMasks(level);
 
         RenderStylegroundsIntoBuffers(level, foreground: false);
-        if (!StyleMaskModule.aonHelperLoaded || aonHelperCompat_GetFgStylegroundBloomTag(level) == null)
-            RenderStylegroundsIntoBuffers(level, foreground: true);
+
+        // don't draw fg stylegrounds to buffers yet if an aon helper fg styleground bloom controller with a non empty bloom tag is present
+        if (StyleMaskModule.aonHelperLoaded && aonHelperCompat.GetCurrentFgStylegroundBloomTag(level) != null)
+            return;
+
+        RenderStylegroundsIntoBuffers(level, foreground: true);
     }
 
     public override void Render(Scene scene) {
         var level = scene as Level;
 
-        if (StyleMaskModule.aonHelperLoaded && aonHelperCompat_applyBloom != null && aonHelperCompat_GetFgStylegroundBloomTag(level) != null && Foreground && Behind) {
+        // if rendering through aon helper's fg styleground bloom controller modinterop, draw fg stylegrounds to buffers here instead so they can be filtered based on the bloom tag
+        if (StyleMaskModule.aonHelperLoaded && aonHelperCompat_applyBloom != null && aonHelperCompat.GetCurrentFgStylegroundBloomTag(level) != null && Foreground && Behind) {
             var lastTargets = Engine.Graphics.GraphicsDevice.GetRenderTargets();
             RenderStylegroundsIntoBuffers(level, foreground: true);
             Engine.Graphics.GraphicsDevice.SetRenderTargets(lastTargets);

@@ -40,7 +40,7 @@ public class StyleMaskModule : EverestModule {
         });
         aonHelperLoaded = Everest.Loader.DependencyLoaded(new EverestModuleMetadata {
             Name = "aonHelper",
-            Version = new Version(0, 7, 2)
+            Version = new Version(0, 7, 4)
         });
 
         if (SpeedrunToolLoaded)
