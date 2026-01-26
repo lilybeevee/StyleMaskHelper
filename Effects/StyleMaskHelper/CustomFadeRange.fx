@@ -1,20 +1,20 @@
 sampler tex : register(s0);
 
+uniform float4 colorFrom;
+uniform float4 colorTo;
+
 float4 effect(float2 uv : TEXCOORD0, float4 color : COLOR0) : COLOR
 {
     float alphaFrom = color.r;
     float alphaTo = color.g;
-
-    float alpha = tex2D(tex, uv).a;
-    alpha = (alpha * (alphaTo - alphaFrom)) + alphaFrom;
-
-    return float4(alpha, alpha, alpha, alpha);
+    float alpha = lerp(alphaFrom, alphaTo, tex2D(tex, uv).a);
+    return lerp(colorFrom, colorTo, alpha);
 }
 
 technique CustomFadeRange
 {
-    pass pass0
+    pass
     {
-        PixelShader = compile ps_2_0 effect();
+        PixelShader = compile ps_3_0 effect();
     }
 } 

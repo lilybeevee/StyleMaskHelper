@@ -75,6 +75,9 @@ public class LightingMask : Mask {
             if (fadeMasks.Length > 0) {
                 Engine.Graphics.GraphicsDevice.SetRenderTarget(GameplayBuffers.TempB);
                 Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
+                
+                StyleMaskModule.CustomFadeRange.Parameters["colorFrom"].SetValue(Color.Transparent.ToVector4());
+                StyleMaskModule.CustomFadeRange.Parameters["colorTo"].SetValue(Color.White.ToVector4());
 
                 Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, StyleMaskModule.CustomFadeRange, level.Camera.Matrix);
                 foreach (var mask in fadeMasks) {
