@@ -421,8 +421,8 @@ public class StylegroundMaskRenderer : Renderer {
         if (batchMasks.Any()) {
             Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, level.Camera.Matrix);
             foreach (var mask in batchMasks) {
+                var slices = mask.GetMaskSlices();
                 foreach (var tag in mask.RenderTags) {
-                    var slices = mask.GetMaskSlices();
                     if (bufferDict.TryGetValue(tag, out var buffer)) {
                         foreach (var slice in slices) {
                             Draw.SpriteBatch.Draw(buffer, slice.Position, slice.Source, Color.White * slice.GetValue(mask.AlphaFrom, mask.AlphaTo));
