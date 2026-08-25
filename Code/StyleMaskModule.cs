@@ -3,6 +3,7 @@ using Celeste.Mod.StyleMaskHelper.Effects;
 using Celeste.Mod.StyleMaskHelper.Entities;
 using Microsoft.Xna.Framework.Graphics;
 using Monocle;
+using MonoMod.RuntimeDetour;
 using System;
 
 namespace Celeste.Mod.StyleMaskHelper;
@@ -14,6 +15,7 @@ public class StyleMaskModule : EverestModule {
     public static bool SpeedrunToolLoaded { get; private set; }
     public static bool ExtendedVariantsLoaded { get; private set; }
     public static bool FrostHelperLoaded { get; private set; }
+    public static bool aonHelperLoaded { get; private set; }
 
     public static Effect MaskEffect { get; private set; }
     public static Effect CustomFadeRange { get; private set; }
@@ -41,12 +43,19 @@ public class StyleMaskModule : EverestModule {
             Name = "FrostHelper",
             Version = new Version(1, 76, 4)
         });
+        aonHelperLoaded = Everest.Loader.DependencyLoaded(new EverestModuleMetadata {
+            Name = "aonHelper",
+            Version = new Version(0, 9, 0)
+        });
 
         if (SpeedrunToolLoaded)
             SpeedrunToolCompat.Initialize();
         
         if (FrostHelperLoaded)
             FrostHelperCompat.Initialize();
+
+        if (aonHelperLoaded)
+            aonHelperCompat.Initialize();
     }
 
     public override void LoadContent(bool firstLoad) {
@@ -60,21 +69,26 @@ public class StyleMaskModule : EverestModule {
     }
 
     public override void Load() {
-        StyleMaskCommonHooks.Load();
-        StylegroundLightingHandler.Load();
-        StylegroundMaskTilesetHandler.Load();
+        using (new DetourConfigContext(new DetourConfig("StyleMaskHelper")).Use()) {
+            StyleMaskCommonHooks.Load();
+            StylegroundLightingHandler.Load();
+            StylegroundMaskTilesetHandler.Load();
 
-        BloomMask.Load();
-        StylegroundMaskRenderer.Load();
-        LightingMask.Load();
-        ColorGradeMask.Load();
+            BloomMask.Load();
+            StylegroundMaskRenderer.Load();
+            LightingMask.Load();
+            ColorGradeMask.Load();
 
-        HeatWaveOneMode.Load();
+            HeatWaveOneMode.Load();
+        }
 
         Everest.Events.Level.OnLoadBackdrop += OnLoadBackdrop;
     }
 
     public override void Unload() {
+        if (aonHelperLoaded)
+            aonHelperCompat.Uninitialize();
+
         StyleMaskCommonHooks.Unload();
         StylegroundLightingHandler.Unload();
         StylegroundMaskTilesetHandler.Unload();

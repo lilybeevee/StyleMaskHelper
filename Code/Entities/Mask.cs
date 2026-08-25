@@ -47,6 +47,8 @@ public class Mask : Entity {
 
     public Level Level;
     protected Vector2 startPosition;
+    
+    private readonly List<MaskSlice> maskSlices = new();
 
     public Mask(Vector2 position, float width, float height) : base(position) {
         Collider = new Hitbox(width, height);
@@ -92,22 +94,26 @@ public class Mask : Entity {
     public Rectangle GetVisibleRect()
         => Rectangle.Intersect(new Rectangle(0, 0, Level.Camera.Viewport.Width, Level.Camera.Viewport.Height), new Rectangle((int)(X - Level.Camera.X), (int)(Y - Level.Camera.Y), (int)Width, (int)Height));
 
-    public Vector2 GetDrawPos()
-        => new Vector2(Math.Max(X, Level.Camera.X), Math.Max(Y, Level.Camera.Y));
+    public Vector2 GetDrawPos() {
+        // Get the draw position frrom the source rectangle
+        // in order to support fractional camera positions
+        Rectangle sourceRect = GetVisibleRect();
+        return new Vector2(sourceRect.X + Level.Camera.X, sourceRect.Y + Level.Camera.Y);
+    }
 
     public Vector2 GetDrawOffset()
         => new Vector2(Math.Max(0, Level.Camera.X - X), Math.Max(0, Level.Camera.Y - Y));
 
     public List<MaskSlice> GetMaskSlices() {
-        var slices = new List<MaskSlice>();
+        maskSlices.Clear();
         if (!IsVisible())
-            return slices;
+            return maskSlices;
         var offset = Vector2.Zero;
         var source = Rectangle.Empty;
         switch (Fade) {
             case FadeType.None:
             case FadeType.Custom:
-                slices.Add(new MaskSlice(GetDrawPos(), GetVisibleRect()));
+                maskSlices.Add(new MaskSlice(GetDrawPos(), GetVisibleRect()));
                 break;
             case FadeType.LeftToRight:
             case FadeType.RightToLeft:
@@ -115,7 +121,7 @@ public class Mask : Entity {
                 source = GetVisibleRect();
                 for (var x = (int)offset.X; x < Width; x++) {
                     if (x - (int)offset.X < source.Width) {
-                        slices.Add(new MaskSlice(
+                        maskSlices.Add(new MaskSlice(
                             Position + new Vector2(x, offset.Y),
                             new Rectangle(source.X + (x - (int)offset.X), source.Y, 1, source.Height),
                             Fade == FadeType.LeftToRight ? x / Width : 1 - x / Width
@@ -129,7 +135,7 @@ public class Mask : Entity {
                 source = GetVisibleRect();
                 for (var y = (int)offset.Y; y < Height; y++) {
                     if (y - (int)offset.Y < source.Height) {
-                        slices.Add(new MaskSlice(
+                        maskSlices.Add(new MaskSlice(
                             Position + new Vector2(offset.X, y),
                             new Rectangle(source.X, source.Y + (y - (int)offset.Y), source.Width, 1),
                             Fade == FadeType.TopToBottom ? y/ Height : 1 - y / Height
@@ -138,7 +144,7 @@ public class Mask : Entity {
                 }
                 break;
         }
-        return slices;
+        return maskSlices;
     }
 
 
