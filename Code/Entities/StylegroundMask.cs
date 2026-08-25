@@ -222,6 +222,23 @@ public class StylegroundMaskRenderer : Renderer {
     public bool Foreground;
     public bool Behind;
 
+    // aon helper fg styleground bloom controller compat
+
+    /// <summary>
+    /// when rendering through aon helper's fg styleground bloom controller modinterop, whether to render fg stylegrounds that should be affected by bloom or ones that shouldn't.<br/>
+    /// will be null otherwise.
+    /// </summary>
+    private bool? aonHelperCompat_applyBloom;
+
+    private void aonHelperCompat_RenderFgWith(Scene scene, bool behind, bool applyBloom) {
+        aonHelperCompat_applyBloom = applyBloom;
+        RenderWith(scene, fg: true, behind: behind);
+        aonHelperCompat_applyBloom = null;
+    }
+
+    public static void aonHelperCompat_BeforeRender(Level level, bool applyBloom) => Instance?.aonHelperCompat_RenderFgWith(level, true, applyBloom);
+    public static void aonHelperCompat_AfterRender(Level level, bool applyBloom) => Instance?.aonHelperCompat_RenderFgWith(level, false, applyBloom);
+
     // tag -> backdrops
     public Dictionary<string, List<Backdrop>> FGBackdrops = new();
     public Dictionary<string, List<Backdrop>> BGBackdrops = new();
@@ -332,7 +349,13 @@ public class StylegroundMaskRenderer : Renderer {
             if (AnyMaskIsInView(level, tag)) {
                 // since masked stylegrounds are not in the level's styleground renderers at all,
                 // we need to go through the whole update-render cycle here
-                DummyBackdropRenderer.Backdrops = backdrops;
+
+                // if rendering through aon helper's fg styleground bloom controller modinterop, filter fg stylegrounds based on bloom tag
+                List<Backdrop> toRender = StyleMaskModule.aonHelperLoaded && aonHelperCompat_applyBloom != null && aonHelperCompat.GetCurrentFgStylegroundBloomTag(level) is { } aonHelperCompat_bloomTag && foreground
+                    ? backdrops.Where(backdrop => backdrop.Tags.Contains(aonHelperCompat_bloomTag) == aonHelperCompat_applyBloom).ToList()
+                    : backdrops;
+
+                DummyBackdropRenderer.Backdrops = toRender;
                 if (!level.Paused)
                     DummyBackdropRenderer.Update(level);
                 DummyBackdropRenderer.BeforeRender(level);
@@ -358,12 +381,25 @@ public class StylegroundMaskRenderer : Renderer {
     public override void BeforeRender(Scene scene) {
         var level = scene as Level;
         UpdateVisibleTilesetMasks(level);
+
         RenderStylegroundsIntoBuffers(level, foreground: false);
+
+        // don't draw fg stylegrounds to buffers yet if an aon helper fg styleground bloom controller with a non empty bloom tag is present
+        if (StyleMaskModule.aonHelperLoaded && aonHelperCompat.GetCurrentFgStylegroundBloomTag(level) != null)
+            return;
+
         RenderStylegroundsIntoBuffers(level, foreground: true);
     }
 
     public override void Render(Scene scene) {
         var level = scene as Level;
+
+        // if rendering through aon helper's fg styleground bloom controller modinterop, draw fg stylegrounds to buffers here instead so they can be filtered based on the bloom tag
+        if (StyleMaskModule.aonHelperLoaded && aonHelperCompat_applyBloom != null && aonHelperCompat.GetCurrentFgStylegroundBloomTag(level) != null && Foreground && Behind) {
+            var lastTargets = Engine.Graphics.GraphicsDevice.GetRenderTargets();
+            RenderStylegroundsIntoBuffers(level, foreground: true);
+            Engine.Graphics.GraphicsDevice.SetRenderTargets(lastTargets);
+        }
 
         var bufferDict = GetBuffers(Foreground);
         if (bufferDict.Count == 0)
@@ -372,8 +408,6 @@ public class StylegroundMaskRenderer : Renderer {
         // fixes bug where custom fade masks would be rendered white if simplified graphics is enabled with CelesteTAS
         if (StyleMaskModule.CelesteTASLoaded && CelesteTASCompat.SimplifiedBackdrop)
             return;
-
-        var backdrops = GetBackdrops(Foreground);
 
         var masks = scene.Tracker.GetEntities<StylegroundMask>().Cast<StylegroundMask>().Where(ShouldRenderMask);
         var fadeMasks = masks.Where(mask => mask.Fade == Mask.FadeType.Custom);
