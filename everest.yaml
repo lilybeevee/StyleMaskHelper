@@ -13,5 +13,7 @@
       Version: 3.21.0
     - Name: ExtendedVariantMode
       Version: 0.28.1
+    - Name: FrostHelper
+      Version: 1.76.4
     - Name: aonHelper
       Version: 0.9.0

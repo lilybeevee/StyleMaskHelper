@@ -99,6 +99,7 @@ public class BloomMask : Mask {
 
                     if (masks.Any() && !(StyleMaskModule.CelesteTASLoaded && CelesteTASCompat.SimplifiedBloom)) {
                         var bloomMaskLastStrength = selfData.Get<float>(DynDataLastStrengthName);
+                        var bloomColor = FrostHelperCompat.GetFrostHelperBloomColor();
                         var maxStrength = 0f;
 
                         var rectMasks = masks.Where(mask => mask.Fade != FadeType.Custom);
@@ -106,7 +107,7 @@ public class BloomMask : Mask {
 
                         var lastTargets = Engine.Graphics.GraphicsDevice.GetRenderTargets();
 
-                        // Bloom Buffer
+                        // Bloom Base
 
                         Engine.Instance.GraphicsDevice.SetRenderTarget(ZoomOutCompat.EnsureBufferDimensions(BloomBuffer));
                         Engine.Instance.GraphicsDevice.Clear(Color.Transparent);
@@ -118,11 +119,14 @@ public class BloomMask : Mask {
                             var baseTo = (mask.BaseTo >= 0f ? mask.BaseTo : self.Base);
 
                             foreach (var slice in mask.GetMaskSlices())
-                                Draw.Rect(slice.Position.X, slice.Position.Y, slice.Source.Width, slice.Source.Height, Color.White * slice.GetValue(baseFrom, baseTo));
+                                Draw.Rect(slice.Position.X, slice.Position.Y, slice.Source.Width, slice.Source.Height, bloomColor * slice.GetValue(baseFrom, baseTo));
                         }
                         Draw.SpriteBatch.End();
 
                         if (fadeMasks.Length > 0) {
+                            StyleMaskModule.CustomFadeRange.Parameters["colorFrom"].SetValue(Color.Transparent.ToVector4());
+                            StyleMaskModule.CustomFadeRange.Parameters["colorTo"].SetValue(bloomColor.ToVector4());
+                            
                             Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, StyleMaskModule.CustomFadeRange, level.Camera.Matrix);
                             foreach (var mask in fadeMasks) {
                                 var baseFrom = (mask.BaseFrom >= 0f ? mask.BaseFrom : self.Base);
@@ -139,14 +143,17 @@ public class BloomMask : Mask {
                         }
 
                         Draw.SpriteBatch.Begin(SpriteSortMode.Immediate, BloomRenderer.BlurredScreenToMask);
-                        Draw.SpriteBatch.Draw(texture, Vector2.Zero, Color.White);
+                        Draw.SpriteBatch.Draw(texture, Vector2.Zero, bloomColor);
                         Draw.SpriteBatch.End();
 
-                        // Fade Buffer (Strength)
+                        // Bloom Strength
 
                         if (fadeMasks.Length > 0) {
                             Engine.Instance.GraphicsDevice.SetRenderTarget(ZoomOutCompat.EnsureBufferDimensions(FadeBuffer));
                             Engine.Instance.GraphicsDevice.Clear(Color.Transparent);
+                            
+                            StyleMaskModule.CustomFadeRange.Parameters["colorFrom"].SetValue(Color.Transparent.ToVector4());
+                            StyleMaskModule.CustomFadeRange.Parameters["colorTo"].SetValue(Color.White.ToVector4());
 
                             Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, StyleMaskModule.CustomFadeRange, level.Camera.Matrix);
                             foreach (var mask in fadeMasks) {
@@ -162,7 +169,7 @@ public class BloomMask : Mask {
                             Draw.SpriteBatch.End();
                         }
 
-                        // Target Buffer
+                        // Apply Bloom
 
                         Engine.Instance.GraphicsDevice.SetRenderTarget(target);
 
@@ -180,7 +187,7 @@ public class BloomMask : Mask {
                                 var strength = slice.GetValue(strengthFrom, strengthTo);
                                 for (int i = 0; i < strength; i++) {
                                     var scale = (i < strength - 1f) ? 1f : (strength - i);
-                                    Draw.SpriteBatch.Draw(BloomBuffer, slice.Position, slice.Source, Color.White * scale);
+                                    Draw.SpriteBatch.Draw(BloomBuffer, slice.Position, slice.Source, bloomColor * scale);
                                 }
                             }
                         }
@@ -188,12 +195,11 @@ public class BloomMask : Mask {
 
                         if (fadeMasks.Length > 0) {
                             Engine.Graphics.GraphicsDevice.Textures[1] = BloomBuffer;
-                            StyleMaskModule.StrengthMask.Parameters["maxStrength"].SetValue(maxStrength);
 
-                            Draw.SpriteBatch.Begin(SpriteSortMode.Immediate, BloomRenderer.AdditiveMaskToScreen, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, StyleMaskModule.StrengthMask);
+                            Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BloomRenderer.AdditiveMaskToScreen, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, StyleMaskModule.MaskEffect);
                             for (int i = 0; i < maxStrength; i++) {
-                                StyleMaskModule.StrengthMask.Parameters["currentStep"].SetValue(i);
-                                Draw.SpriteBatch.Draw(FadeBuffer, Vector2.Zero, Color.White);
+                                var scale = (i < maxStrength - 1f) ? 1f : (maxStrength - i);
+                                Draw.SpriteBatch.Draw(FadeBuffer, Vector2.Zero, bloomColor * scale);
                             }
                             Draw.SpriteBatch.End();
                         }

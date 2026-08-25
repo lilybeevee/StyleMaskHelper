@@ -14,10 +14,10 @@ public class StyleMaskModule : EverestModule {
     public static bool CelesteTASLoaded { get; private set; }
     public static bool SpeedrunToolLoaded { get; private set; }
     public static bool ExtendedVariantsLoaded { get; private set; }
+    public static bool FrostHelperLoaded { get; private set; }
     public static bool aonHelperLoaded { get; private set; }
 
     public static Effect MaskEffect { get; private set; }
-    public static Effect StrengthMask { get; private set; }
     public static Effect CustomFadeRange { get; private set; }
 
     public override void Initialize() {
@@ -39,6 +39,10 @@ public class StyleMaskModule : EverestModule {
             Name = "ExtendedVariantMode",
             Version = new Version(0, 28, 1)
         });
+        FrostHelperLoaded = Everest.Loader.DependencyLoaded(new EverestModuleMetadata {
+            Name = "FrostHelper",
+            Version = new Version(1, 76, 4)
+        });
         aonHelperLoaded = Everest.Loader.DependencyLoaded(new EverestModuleMetadata {
             Name = "aonHelper",
             Version = new Version(0, 9, 0)
@@ -46,6 +50,9 @@ public class StyleMaskModule : EverestModule {
 
         if (SpeedrunToolLoaded)
             SpeedrunToolCompat.Initialize();
+        
+        if (FrostHelperLoaded)
+            FrostHelperCompat.Initialize();
 
         if (aonHelperLoaded)
             aonHelperCompat.Initialize();
@@ -55,11 +62,9 @@ public class StyleMaskModule : EverestModule {
         if (!firstLoad) return;
 
         var maskEffectAsset = Everest.Content.Get("Effects/StyleMaskHelper/Mask.cso");
-        var strengthMaskAsset = Everest.Content.Get("Effects/StyleMaskHelper/StrengthMask.cso");
         var customFadeRangeAsset = Everest.Content.Get("Effects/StyleMaskHelper/CustomFadeRange.cso");
 
         MaskEffect = new Effect(Engine.Graphics.GraphicsDevice, maskEffectAsset.Data);
-        StrengthMask = new Effect(Engine.Graphics.GraphicsDevice, strengthMaskAsset.Data);
         CustomFadeRange = new Effect(Engine.Graphics.GraphicsDevice, customFadeRangeAsset.Data);
     }
 
